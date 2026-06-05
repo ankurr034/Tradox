@@ -1,0 +1,406 @@
+@import "tailwindcss";
+
+@theme {
+  --color-background: #0a0a0a;
+  --color-surface: #111111;
+  --color-surface-highlight: #1a1a1a;
+  --color-primary: #00D09C;
+  --color-primary-dim: #00d09c15;
+  --color-secondary: #3b82f6;
+  --color-accent: #f59e0b;
+  --color-danger: #EB5B3C;
+  --color-success: #00D09C;
+  
+  /* OVERRIDES TO FORCE PREMIUM DESIGN ACROSS ALL FILES */
+  --color-emerald-400: #00D09C;
+  --color-emerald-500: #00b386;
+  --color-red-400: #EB5B3C;
+  --color-red-500: #d6492b;
+  --color-zinc-900: #111111;
+  --color-zinc-800: #1a1a1a;
+  --color-black: #0a0a0a;
+
+  --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-family-mono: 'JetBrains Mono', monospace;
+}
+
+@layer base {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: #ffffff15 transparent;
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: #e4e4e7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
+    font-family: var(--font-family-sans);
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background: #00d4aa40;
+    color: white;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PREMIUM CARD SYSTEM
+   ═══════════════════════════════════════════════════════════ */
+.glass-panel {
+  background-color: var(--color-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+}
+
+.glass-panel-hover {
+  background-color: var(--color-surface);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  transition: all 0.2s ease;
+}
+
+.glass-card {
+  background-color: rgba(17, 17, 17, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 24px;
+  box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.glass-panel-hover:hover {
+  border-color: rgba(255, 255, 255, 0.15);
+  transform: translateY(-1px);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   LIVE TICKER STRIP
+   ═══════════════════════════════════════════════════════════ */
+.ticker-strip {
+  width: 100%;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+  mask-image: linear-gradient(to right, transparent, black 5%, black 95%, transparent);
+}
+
+.ticker-track {
+  display: flex;
+  gap: 2rem;
+  animation: tickerScroll 40s linear infinite;
+  width: max-content;
+}
+
+.ticker-track:hover {
+  animation-play-state: paused;
+}
+
+@keyframes tickerScroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   PULSE DOT (LIVE INDICATOR)
+   ═══════════════════════════════════════════════════════════ */
+.live-dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 9999px;
+  background-color: #10b981;
+  position: relative;
+}
+
+.live-dot::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background-color: #10b981;
+  animation: pulse-ring 2s ease-out infinite;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(1); opacity: 0.6; }
+  100% { transform: scale(2.5); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CUSTOM SCROLLBAR
+   ═══════════════════════════════════════════════════════════ */
+.hide-scrollbar::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.hide-scrollbar,
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   SHIMMER SKELETON LOADING
+   ═══════════════════════════════════════════════════════════ */
+.skeleton {
+  border-radius: 0.75rem;
+  background: linear-gradient(90deg, rgba(255,255,255,0.02) 25%, rgba(255,255,255,0.06) 50%, rgba(255,255,255,0.02) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   AMBIENT GLOW EFFECTS
+   ═══════════════════════════════════════════════════════════ */
+.glow-primary {
+  box-shadow: 0 0 40px rgba(0, 212, 170, 0.15), 0 0 80px rgba(0, 212, 170, 0.05);
+}
+
+.glow-danger {
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.15), 0 0 80px rgba(239, 68, 68, 0.05);
+}
+
+/* ═══════════════════════════════════════════════════════════
+   CHART TOOLTIP RESET
+   ═══════════════════════════════════════════════════════════ */
+.recharts-tooltip-wrapper {
+  outline: none;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   GRADIENT TEXT
+   ═══════════════════════════════════════════════════════════ */
+.text-gradient {
+  background: linear-gradient(135deg, #00d4aa, #6366f1);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-gradient-warm {
+  background: linear-gradient(135deg, #f59e0b, #ef4444);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   NOISE TEXTURE OVERLAY
+   ═══════════════════════════════════════════════════════════ */
+.noise-overlay::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  opacity: 0.015;
+  pointer-events: none;
+  z-index: 50;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* ═══════════════════════════════════════════════════════════
+   MONOSPACE DATA DISPLAY
+   ═══════════════════════════════════════════════════════════ */
+.font-mono-data {
+  font-family: var(--font-family-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ═══════════════════════════════════════════════════════════
+   TOAST NOTIFICATION SYSTEM
+   ═══════════════════════════════════════════════════════════ */
+.toast-enter {
+  animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.toast-exit {
+  animation: toastOut 0.25s ease-in forwards;
+}
+
+@keyframes toastIn {
+  from { transform: translateY(100%) scale(0.9); opacity: 0; }
+  to { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+@keyframes toastOut {
+  from { transform: translateY(0) scale(1); opacity: 1; }
+  to { transform: translateY(100%) scale(0.9); opacity: 0; }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   RESPONSIVE BREAKPOINT HELPERS — ALL DEVICE TYPES
+   Mobile-first: 320px → 480px → 640px → 768px → 1024px → 1280px → 1536px
+   ═══════════════════════════════════════════════════════════ */
+
+/* ── Extra Small (phones ≤ 480px) ── */
+@media (max-width: 480px) {
+  .glass-panel,
+  .glass-panel-hover,
+  .glass-card {
+    border-radius: 0.75rem;
+    padding: 0.75rem;
+  }
+
+  .glass-card {
+    border-radius: 1rem;
+    padding: 1.25rem;
+  }
+
+  body {
+    font-size: 14px;
+  }
+
+  /* Ensure touch targets are at least 44px */
+  button[type="submit"], input, select, textarea {
+    min-height: 44px;
+  }
+
+  /* Prevent iOS zoom on number inputs */
+  input {
+    font-size: 16px;
+  }
+
+  /* Fix overflow on small screens */
+  .recharts-wrapper {
+    font-size: 10px;
+  }
+}
+
+/* ── Small (phones 481px – 640px) ── */
+@media (min-width: 481px) and (max-width: 640px) {
+  .glass-panel,
+  .glass-panel-hover {
+    border-radius: 0.75rem;
+  }
+
+  .glass-card {
+    border-radius: 1.25rem;
+  }
+}
+
+/* ── Medium (tablets 641px – 768px) ── */
+@media (max-width: 768px) {
+  .glass-panel,
+  .glass-panel-hover {
+    border-radius: 0.75rem;
+  }
+
+  /* Simplify heavy blur effects for performance */
+  .glass-card {
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+  }
+}
+
+/* ── Large tablets / iPad (769px – 1024px) ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .glass-panel,
+  .glass-panel-hover {
+    border-radius: 0.875rem;
+  }
+}
+
+/* ── Safe area insets for notched devices (iPhone X+, etc.) ── */
+@supports (padding: env(safe-area-inset-bottom)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  footer {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* ── Responsive typography scale ── */
+@media (max-width: 640px) {
+  h1 { font-size: clamp(1.5rem, 5vw, 2.25rem) !important; }
+  h2 { font-size: clamp(1.125rem, 4vw, 1.5rem) !important; }
+  h3 { font-size: clamp(1rem, 3.5vw, 1.25rem) !important; }
+}
+
+@media (min-width: 641px) and (max-width: 1024px) {
+  h1 { font-size: clamp(1.75rem, 4vw, 3rem) !important; }
+}
+
+/* ── Responsive table improvements ── */
+@media (max-width: 768px) {
+  table {
+    display: block;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  table th,
+  table td {
+    white-space: nowrap;
+    padding: 0.75rem 1rem !important;
+    font-size: 0.75rem;
+  }
+}
+
+/* ── Ticker animation speed on mobile ── */
+@media (max-width: 768px) {
+  .ticker-track {
+    animation-duration: 25s;
+    gap: 1rem;
+  }
+}
+
+/* ── Disable heavy effects on low-power devices ── */
+@media (prefers-reduced-motion: reduce) {
+  .ticker-track {
+    animation: none;
+  }
+
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* ── Responsive utility classes ── */
+@layer utilities {
+  .container-responsive {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  @media (min-width: 640px) {
+    .container-responsive {
+      padding-left: 1.5rem;
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container-responsive {
+      padding-left: 2rem;
+      padding-right: 2rem;
+    }
+  }
+
+  @media (min-width: 1280px) {
+    .container-responsive {
+      max-width: 80rem;
+    }
+  }
+
+  @media (min-width: 1536px) {
+    .container-responsive {
+      max-width: 96rem;
+    }
+  }
+}

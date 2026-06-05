@@ -1,0 +1,55 @@
+/* App.css — Additional component-specific overrides */
+
+/* Range input custom styling for WebKit browsers */
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #00d4aa;
+  cursor: pointer;
+  border: 2px solid #06060a;
+  box-shadow: 0 0 8px rgba(0, 212, 170, 0.3);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #00d4aa;
+  cursor: pointer;
+  border: 2px solid #06060a;
+  box-shadow: 0 0 8px rgba(0, 212, 170, 0.3);
+}
+
+/* Table hover row enhancement */
+table tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.02);
+}
+
+/* Select dropdown styling */
+select option {
+  background: #0c0c12;
+  color: #e4e4e7;
+}
+
+/* Focus ring for accessibility */
+*:focus-visible {
+  outline: 2px solid rgba(0, 212, 170, 0.4);
+  outline-offset: 2px;
+}
+
+/* Recharts animation smoothing */
+.recharts-surface {
+  overflow: visible;
+}
+
+/* Line clamp utility */
+.line-clamp-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
