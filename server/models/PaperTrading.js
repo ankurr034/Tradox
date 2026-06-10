@@ -20,6 +20,7 @@ const paperPositionSchema = new mongoose.Schema({
 });
 // Ensure a user only has one active position document per symbol
 paperPositionSchema.index({ userId: 1, symbol: 1 }, { unique: true });
+paperPositionSchema.index({ userId: 1 }); // Quick lookup for user portfolio overview
 
 const paperOrderSchema = new mongoose.Schema({
   userId: { type: String, required: true },
@@ -35,6 +36,12 @@ const paperOrderSchema = new mongoose.Schema({
   rejectReason: { type: String },
   createdAt: { type: Date, default: Date.now }
 });
+
+// Indexes for performance optimization
+paperOrderSchema.index({ userId: 1, createdAt: -1 }); // Quick sorting for order logs
+paperOrderSchema.index({ status: 1 });                 // Order state lookups
+paperOrderSchema.index({ symbol: 1 });                 // Symbol aggregation & statistics
+paperOrderSchema.index({ userId: 1, status: 1 });       // Fetching user's active/pending trades
 
 const riskEventSchema = new mongoose.Schema({
   userId: { type: String, required: true },

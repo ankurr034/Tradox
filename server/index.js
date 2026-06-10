@@ -4,6 +4,10 @@ import mongoose from 'mongoose';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
+import helmet from 'helmet';
+import mongoSanitize from 'express-mongo-sanitize';
+import rateLimit from 'express-rate-limit';
+import logger, { createLogger } from './utils/logger.js';
 
 // Routes
 import predictionRoutes from './routes/predictions.js';
@@ -14,44 +18,243 @@ import portfolioRoutes from './routes/portfolio.js';
 import marketRoutes from './routes/market.js';
 import premiumFeaturesRoutes from './routes/premiumFeatures.js';
 import profileRoutes from './routes/profile.js';
+import walletRoutes from './routes/wallet.js';
+import ordersRoutes from './routes/orders.js';
+import notificationsRoutes from './routes/notifications.js';
+import featuresRoutes from './routes/features.js';
 import BrokerGateway from './services/BrokerGateway.js';
 import MarketAnalyticsEngine from './services/MarketAnalyticsEngine.js';
 import PaperTradingEngine from './services/PaperTradingEngine.js';
+import MarketDataService from './services/MarketDataService.js';
 
 dotenv.config();
 
-// Startup Environment Validation
+const log = createLogger('Server');
+const wsLog = createLogger('WebSocket');
+const mktLog = createLogger('MarketData');
+
+// ═══════════════════════════════════════════════════════════
+//  Startup Environment Validation
+// ═══════════════════════════════════════════════════════════
 const requiredEnvs = ['JWT_SECRET', 'BROKER_API_KEY', 'BROKER_SECRET', 'REDIRECT_URI', 'CLIENT_ID', 'CLIENT_SECRET', 'WS_URL'];
 requiredEnvs.forEach(env => {
   if (!process.env[env]) {
-    console.warn(`[WARNING] Missing ENV variable: ${env}. Broker integration may fail in production.`);
+    log.warn(`Missing ENV variable: ${env}. Broker integration may fail in production.`);
   }
 });
 
-// Global Process Error Handlers
+// ═══════════════════════════════════════════════════════════
+//  Global Process Error Handlers
+// ═══════════════════════════════════════════════════════════
 process.on('uncaughtException', (err) => {
-  console.error('CRITICAL: Uncaught Exception:', err);
+  log.error('Uncaught Exception', { error: err.message, stack: err.stack });
 });
 
-process.on('unhandledRejection', (reason, promise) => {
-  console.error('CRITICAL: Unhandled Rejection at:', promise, 'reason:', reason);
+process.on('unhandledRejection', (reason) => {
+  log.error('Unhandled Rejection', { reason: String(reason) });
 });
 
+// ═══════════════════════════════════════════════════════════
+//  Express App & HTTP Server
+// ═══════════════════════════════════════════════════════════
 const app = express();
 const analyticsEngine = new MarketAnalyticsEngine();
 const httpServer = createServer(app);
+
+// ═══════════════════════════════════════════════════════════
+//  Socket.IO with Production Settings
+// ═══════════════════════════════════════════════════════════
 const io = new Server(httpServer, {
   cors: {
     origin: process.env.FRONTEND_URL || 'http://localhost:5173',
     methods: ['GET', 'POST']
-  }
+  },
+  pingInterval: 25000,     // Server-side heartbeat every 25s
+  pingTimeout: 60000,      // Disconnect after 60s without pong
+  maxHttpBufferSize: 1e6,  // 1MB max message size
+  connectTimeout: 10000    // 10s connection timeout
 });
 
-// Middleware
-app.use(cors());
-app.use(express.json());
+// ═══════════════════════════════════════════════════════════
+//  SECURITY MIDDLEWARE STACK
+// ═══════════════════════════════════════════════════════════
 
-// Routes setup
+// 1. Helmet: HTTP security headers
+app.use(helmet({
+  contentSecurityPolicy: false,  // CSP would break our SPA
+  crossOriginEmbedderPolicy: false
+}));
+
+// 2. CORS
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:3000'
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // Allow server-to-server or Postman
+    if (allowedOrigins.includes(origin) || /^http:\/\/localhost:\d+$/.test(origin)) {
+      return callback(null, true);
+    }
+    if (process.env.FRONTEND_URL && origin === process.env.FRONTEND_URL) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE'],
+  credentials: true
+}));
+
+// 3. Body parsing with size limits
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// 4. MongoDB query injection prevention
+app.use(mongoSanitize({
+  replaceWith: '_',
+  onSanitize: ({ req, key }) => {
+    log.warn('Sanitized NoSQL injection attempt', { ip: req.ip, key });
+  }
+}));
+
+// 5. Global rate limiter
+const globalLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 500,                  // 500 requests per window
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: 'Too many requests, please try again later.' },
+  skip: (req) => req.path === '/api/health' // Always allow health checks
+});
+app.use('/api/', globalLimiter);
+
+// 6. Strict rate limiter for auth endpoints
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { error: 'Too many authentication attempts.' }
+});
+app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
+
+// 7. Strict wallet & payment rate limiter
+const walletLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50, // Max 50 wallet deposits, withdrawals or verifications per 15 minutes
+  message: { error: 'Too many wallet operations. Please try again later.' }
+});
+app.use('/api/wallet', walletLimiter);
+
+// 8. Trading operations rate limiter (broker orders & cancels)
+const tradeLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 60, // Max 60 trades/orders per minute
+  message: { error: 'Trade rate limit exceeded. Please throttle order requests.' }
+});
+app.use('/api/broker/order', tradeLimiter);
+app.use('/api/orders/cancel', tradeLimiter);
+
+// ═══════════════════════════════════════════════════════════
+//  REQUEST TIMING & LOGGING MIDDLEWARE
+// ═══════════════════════════════════════════════════════════
+app.use((req, res, next) => {
+  const start = Date.now();
+  res.on('finish', () => {
+    const duration = Date.now() - start;
+    if (duration > 1000) {
+      log.warn('Slow request', { method: req.method, url: req.originalUrl, duration: `${duration}ms`, status: res.statusCode });
+    }
+  });
+  next();
+});
+
+// ═══════════════════════════════════════════════════════════
+//  HEALTH CHECK ENDPOINTS
+// ═══════════════════════════════════════════════════════════
+const startTime = Date.now();
+
+app.get('/api/health', (req, res) => {
+  res.json({
+    status: 'healthy',
+    uptime: Math.floor((Date.now() - startTime) / 1000),
+    timestamp: new Date().toISOString(),
+    version: '2.0.0'
+  });
+});
+
+app.get('/api/health/deep', async (req, res) => {
+  const checks = {
+    server: 'healthy',
+    database: 'unknown',
+    marketData: 'unknown',
+    websocket: 'unknown'
+  };
+
+  // MongoDB check
+  try {
+    checks.database = mongoose.connection.readyState === 1 ? 'healthy' : 'degraded';
+  } catch { checks.database = 'unhealthy'; }
+
+  // Market data check
+  const nifty = MarketDataService.priceCache.get('NIFTY 50');
+  if (nifty) {
+    const age = Date.now() - nifty.lastUpdated;
+    checks.marketData = age < 30000 ? 'healthy' : age < 120000 ? 'degraded' : 'stale';
+    checks.marketDataAge = `${Math.floor(age / 1000)}s`;
+    checks.niftyPrice = nifty.price;
+  } else {
+    checks.marketData = 'no_data';
+  }
+
+  // WebSocket check
+  try {
+    const sockets = await io.fetchSockets();
+    checks.websocket = 'healthy';
+    checks.connectedClients = sockets.length;
+  } catch { checks.websocket = 'degraded'; }
+
+  // Memory utilization monitoring
+  const memory = process.memoryUsage();
+  const memoryUsage = {
+    rss: `${Math.round(memory.rss / 1024 / 1024)}MB`,
+    heapTotal: `${Math.round(memory.heapTotal / 1024 / 1024)}MB`,
+    heapUsed: `${Math.round(memory.heapUsed / 1024 / 1024)}MB`
+  };
+
+  const overallStatus = Object.values(checks).includes('unhealthy') ? 'unhealthy' :
+                        Object.values(checks).includes('degraded') ? 'degraded' : 'healthy';
+
+  res.status(overallStatus === 'unhealthy' ? 503 : 200).json({
+    status: overallStatus,
+    uptime: Math.floor((Date.now() - startTime) / 1000),
+    checks,
+    memoryUsage,
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Market data monitoring endpoint
+app.get('/api/health/market', (req, res) => {
+  const symbols = ['NIFTY 50', 'SENSEX', 'BANKNIFTY', 'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK'];
+  const status = symbols.map(sym => {
+    const cached = MarketDataService.priceCache.get(sym);
+    return {
+      symbol: sym,
+      price: cached?.price || null,
+      change: cached?.changePercent ? `${cached.changePercent >= 0 ? '+' : ''}${cached.changePercent.toFixed(2)}%` : null,
+      age: cached ? `${Math.floor((Date.now() - cached.lastUpdated) / 1000)}s` : 'N/A',
+      stale: cached ? (Date.now() - cached.lastUpdated > 60000) : true
+    };
+  });
+  res.json({ symbols: status, pollInterval: '5s', provider: 'yahoo-finance2' });
+});
+
+// ═══════════════════════════════════════════════════════════
+//  ROUTES SETUP (ordered by priority)
+// ═══════════════════════════════════════════════════════════
 app.use('/api/predictions', predictionRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/premium', premiumRoutes);
@@ -59,127 +262,213 @@ app.use('/api/copilot', aiRoutes);
 app.use('/api/portfolio', portfolioRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api', marketRoutes);
-app.use('/api', premiumFeaturesRoutes);
+app.use('/api', featuresRoutes);
 
-// Analytics REST Endpoint
+// Analytics REST Endpoint (before premium routes to avoid middleware interception)
 app.get('/api/heatmap', (req, res) => {
   res.json(analyticsEngine.getFullState());
 });
 
-// Database Connection
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/nexusai')
-  .then(() => console.log('Connected to MongoDB'))
-  .catch((err) => console.error('MongoDB connection error:', err));
+app.use('/api', premiumFeaturesRoutes);
+app.use('/api/wallet', walletRoutes);
+app.use('/api/orders', ordersRoutes);
+app.use('/api/gtt', ordersRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
-// WebSocket setup
+// ═══════════════════════════════════════════════════════════
+//  DATABASE CONNECTION with Retry
+// ═══════════════════════════════════════════════════════════
+const connectDB = async (retries = 5) => {
+  for (let i = 0; i < retries; i++) {
+    try {
+      await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/nexusai', {
+        serverSelectionTimeoutMS: 5000,
+        heartbeatFrequencyMS: 10000
+      });
+      log.info('Connected to MongoDB');
+      return;
+    } catch (err) {
+      log.error(`MongoDB connection attempt ${i + 1}/${retries} failed`, { error: err.message });
+      if (i < retries - 1) await new Promise(r => setTimeout(r, 3000));
+    }
+  }
+  log.error('Failed to connect to MongoDB after all retries');
+};
+connectDB();
+
+// ═══════════════════════════════════════════════════════════
+//  WEBSOCKET SETUP — Production Hardened
+// ═══════════════════════════════════════════════════════════
+const wsMetrics = {
+  totalConnections: 0,
+  currentConnections: 0,
+  totalMessages: 0,
+  reconnections: new Map(), // Track reconnection rates per IP
+  subscriptions: new Map()  // Track subscription counts
+};
+
 io.on('connection', (socket) => {
-  console.log('Client connected:', socket.id);
+  wsMetrics.totalConnections++;
+  wsMetrics.currentConnections++;
+  wsLog.info(`Client connected: ${socket.id}`, { clients: wsMetrics.currentConnections });
+
+  // Reconnection throttling
+  const clientIp = socket.handshake.address;
+  const reconnects = wsMetrics.reconnections.get(clientIp) || { count: 0, lastTime: 0 };
+  const now = Date.now();
+  if (now - reconnects.lastTime < 1000) {
+    reconnects.count++;
+    if (reconnects.count > 10) {
+      wsLog.warn('Reconnection flood detected', { ip: clientIp, count: reconnects.count });
+      socket.disconnect(true);
+      return;
+    }
+  } else {
+    reconnects.count = 1;
+  }
+  reconnects.lastTime = now;
+  wsMetrics.reconnections.set(clientIp, reconnects);
+
+  // Duplicate subscription prevention
+  const socketSubs = new Set();
 
   socket.on('subscribe_stock', (ticker) => {
-    socket.join(`stock_${ticker}`);
-    console.log(`Socket ${socket.id} joined stock_${ticker}`);
+    if (typeof ticker !== 'string' || ticker.length > 30) return; // Validate
+    const room = `stock_${ticker}`;
+    if (!socketSubs.has(room)) {
+      socket.join(room);
+      socketSubs.add(room);
+    }
   });
 
   socket.on('unsubscribe_stock', (ticker) => {
-    socket.leave(`stock_${ticker}`);
-    console.log(`Socket ${socket.id} left stock_${ticker}`);
+    if (typeof ticker !== 'string') return;
+    const room = `stock_${ticker}`;
+    socket.leave(room);
+    socketSubs.delete(room);
   });
 
   socket.on('subscribe_microstructure', (ticker) => {
-    socket.join(`microstructure_${ticker}`);
-    console.log(`Socket ${socket.id} joined microstructure_${ticker}`);
+    if (typeof ticker !== 'string' || ticker.length > 30) return;
+    const room = `microstructure_${ticker}`;
+    if (!socketSubs.has(room)) {
+      socket.join(room);
+      socketSubs.add(room);
+    }
   });
 
-  socket.on('disconnect', () => {
-    console.log(`Client disconnected: ${socket.id}`);
-  });
-  
   socket.on('join_admin', () => {
     socket.join('admin_telemetry');
-    console.log(`[SOCKET] ${socket.id} joined admin_telemetry`);
   });
 
   socket.on('join_heatmap', () => {
     socket.join('market_heatmap');
-    console.log(`[SOCKET] ${socket.id} joined market_heatmap`);
+  });
+
+  socket.on('disconnect', (reason) => {
+    wsMetrics.currentConnections--;
+    socketSubs.clear();
+    wsLog.info(`Client disconnected: ${socket.id}`, { reason, clients: wsMetrics.currentConnections });
+  });
+
+  socket.on('error', (err) => {
+    wsLog.error('Socket error', { socketId: socket.id, error: err.message });
   });
 });
 
-// Broadcast live Admin Telemetry every 3 seconds
+// Stale client cleanup every 5 minutes
+setInterval(async () => {
+  try {
+    const sockets = await io.fetchSockets();
+    let staleCount = 0;
+    for (const s of sockets) {
+      if (!s.connected) {
+        s.disconnect(true);
+        staleCount++;
+      }
+    }
+    if (staleCount > 0) wsLog.info(`Cleaned ${staleCount} stale sockets`);
+    // Clean old reconnection tracking entries
+    const cutoff = Date.now() - 300000; // 5 min
+    for (const [ip, data] of wsMetrics.reconnections) {
+      if (data.lastTime < cutoff) wsMetrics.reconnections.delete(ip);
+    }
+  } catch (err) {
+    wsLog.error('Stale client cleanup error', { error: err.message });
+  }
+}, 300000);
+
+// ═══════════════════════════════════════════════════════════
+//  BROADCAST TIMERS
+// ═══════════════════════════════════════════════════════════
+
+// Admin Telemetry every 3 seconds
 setInterval(() => {
   const stats = BrokerGateway.getAllBrokerStats();
-  
-  // Inject Analytics Load metrics into admin telemetry
   const analyticsMetrics = analyticsEngine.getMetrics();
-  
-  // Inject Paper Simulator metrics
   const simulatorMetrics = PaperTradingEngine.getMetrics();
-  
   io.to('admin_telemetry').emit('admin_telemetry_update', {
-     timestamp: Date.now(),
-     stats: stats,
-     analyticsLoad: analyticsMetrics,
-     simulatorLoad: simulatorMetrics
+    timestamp: Date.now(),
+    stats,
+    analyticsLoad: analyticsMetrics,
+    simulatorLoad: simulatorMetrics,
+    wsMetrics: {
+      current: wsMetrics.currentConnections,
+      total: wsMetrics.totalConnections
+    }
   });
 }, 3000);
 
-// Broadcast Market Heatmap Deltas every 500ms
+// Heatmap deltas every 500ms
 setInterval(() => {
   const delta = analyticsEngine.computeNextTick();
   if (delta.updatedStocks.length > 0) {
-     io.to('market_heatmap').emit('market_heatmap_update', delta);
+    io.to('market_heatmap').emit('market_heatmap_update', delta);
   }
 }, 500);
 
-// Broadcast stock updates
+// ═══════════════════════════════════════════════════════════
+//  MARKET DATA ENGINE — Enhanced Polling
+// ═══════════════════════════════════════════════════════════
 const activeTickers = ['NIFTY 50', 'SENSEX', 'BANKNIFTY', 'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK'];
-const basePrices = { 'NIFTY 50': 22450, 'SENSEX': 73876, 'BANKNIFTY': 47683, 'RELIANCE': 2980, 'TCS': 3842, 'HDFCBANK': 1500, 'INFY': 1400, 'ICICIBANK': 1100 };
+MarketDataService.startPolling(activeTickers, 5000);
 
+// Broadcast stock updates — batched
 setInterval(() => {
-  const updates = activeTickers.map(ticker => {
-    const basePrice = basePrices[ticker];
-    const variance = (Math.random() - 0.5) * (basePrice * 0.001); // 0.1% volatility
-    const newPrice = basePrice + variance;
-    basePrices[ticker] = newPrice; // store new base
-    const change = newPrice - 22400; // Mock calculation
-    const pct = (change / 22400) * 100;
-    return {
-      symbol: ticker,
-      value: newPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 }),
-      change: (variance >= 0 ? '+' : '') + variance.toFixed(2),
-      pct: (variance >= 0 ? '+' : '') + pct.toFixed(2) + '%',
-      up: variance >= 0
-    };
-  });
-  
-  io.emit('price_update', updates);
-  io.emit('market_update', { timestamp: Date.now(), status: 'Live' });
-}, 1000); // 1-second ticks for high frequency
+  const updates = MarketDataService.getLivePricesForBroadcast(activeTickers);
+  if (updates && updates.length > 0) {
+    io.emit('price_update', updates);
+    io.emit('market_update', { timestamp: Date.now(), status: 'Live' });
+  }
+}, 1000);
 
-// Simulate HFT Microstructure Updates
+// Microstructure Updates using LIVE prices
+let microTick = 0;
 setInterval(() => {
-  const current_price = 2950;
-  const isBuy = Math.random() > 0.5;
+  const current_price = MarketDataService.getCurrentPrice('RELIANCE');
+  microTick++;
+  const isBuy = microTick % 3 !== 0;
+  const spreadOffset = (microTick % 5) * 0.1;
   const new_trade = {
     time: new Date().toLocaleTimeString(),
     side: isBuy ? 'BUY' : 'SELL',
-    price: current_price + (Math.random() > 0.5 ? 0.5 : -0.5),
-    quantity: Math.floor(Math.random() * 2000) + 100,
+    price: parseFloat((current_price + (isBuy ? spreadOffset : -spreadOffset)).toFixed(2)),
+    quantity: 200 + (microTick % 10) * 180,
     value: 0,
-    is_block: Math.random() > 0.9
+    is_block: microTick % 15 === 0
   };
   new_trade.value = new_trade.price * new_trade.quantity;
-  
+
   const order_book = {
     asks: [
-      { orders: Math.floor(Math.random() * 20) + 5, price: current_price + 1.5, quantity: Math.floor(Math.random() * 30000) + 5000 },
-      { orders: Math.floor(Math.random() * 30) + 10, price: current_price + 1.0, quantity: Math.floor(Math.random() * 50000) + 10000 },
-      { orders: Math.floor(Math.random() * 15) + 3, price: current_price + 0.5, quantity: Math.floor(Math.random() * 20000) + 2000 }
+      { orders: 10 + (microTick % 8), price: parseFloat((current_price + 1.5).toFixed(2)), quantity: 12000 + (microTick % 6) * 3000 },
+      { orders: 18 + (microTick % 12), price: parseFloat((current_price + 1.0).toFixed(2)), quantity: 30000 + (microTick % 8) * 4000 },
+      { orders: 6 + (microTick % 5), price: parseFloat((current_price + 0.5).toFixed(2)), quantity: 8000 + (microTick % 4) * 2000 }
     ],
     bids: [
-      { orders: Math.floor(Math.random() * 15) + 3, price: current_price - 0.5, quantity: Math.floor(Math.random() * 20000) + 2000 },
-      { orders: Math.floor(Math.random() * 30) + 10, price: current_price - 1.0, quantity: Math.floor(Math.random() * 50000) + 10000 },
-      { orders: Math.floor(Math.random() * 20) + 5, price: current_price - 1.5, quantity: Math.floor(Math.random() * 30000) + 5000 }
+      { orders: 8 + (microTick % 5), price: parseFloat((current_price - 0.5).toFixed(2)), quantity: 10000 + (microTick % 4) * 2500 },
+      { orders: 20 + (microTick % 10), price: parseFloat((current_price - 1.0).toFixed(2)), quantity: 35000 + (microTick % 6) * 3500 },
+      { orders: 7 + (microTick % 6), price: parseFloat((current_price - 1.5).toFixed(2)), quantity: 9000 + (microTick % 5) * 2000 }
     ]
   };
 
@@ -191,25 +480,37 @@ setInterval(() => {
   });
 }, 2500);
 
-// Simulate AI Smart Alerts
+// Smart Alerts — cycling with live prices
+let alertTick = 0;
 setInterval(() => {
+  const reliancePrice = MarketDataService.getCurrentPrice('RELIANCE');
+  const hdfcPrice = MarketDataService.getCurrentPrice('HDFCBANK');
   const alerts = [
-    { title: 'Block Deal Detected', message: '1.2M shares of HDFCBANK crossed at ₹1495', type: 'info' },
-    { title: 'Smart Money Buy', message: 'Heavy institutional buying observed in RELIANCE.', type: 'buy' },
+    { title: 'Block Deal Detected', message: `1.2M shares of HDFCBANK crossed at ₹${hdfcPrice.toFixed(0)}`, type: 'info' },
+    { title: 'Smart Money Buy', message: `Heavy institutional buying observed in RELIANCE at ₹${reliancePrice.toFixed(0)}.`, type: 'buy' },
     { title: 'Volatility Spike', message: 'NIFTY 50 options IV spiked by 12% in the last 5 mins.', type: 'sell' },
     { title: 'Pattern Breakout', message: 'TCS breaking above 200-SMA with strong volume.', type: 'buy' }
   ];
-  const randomAlert = alerts[Math.floor(Math.random() * alerts.length)];
-  io.emit('smart_alert', randomAlert);
+  io.emit('smart_alert', alerts[alertTick % alerts.length]);
+  alertTick++;
 }, 20000);
 
-// Global Error Handling Middleware
+// ═══════════════════════════════════════════════════════════
+//  GLOBAL ERROR HANDLER
+// ═══════════════════════════════════════════════════════════
 app.use((err, req, res, next) => {
-  console.error('Unhandled Express Error:', err);
-  res.status(500).json({ error: 'Internal Server Error', detail: err.message });
+  log.error('Unhandled Express Error', { method: req.method, url: req.originalUrl, error: err.message, stack: err.stack });
+  res.status(500).json({ error: 'Internal Server Error', detail: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message });
 });
 
+// ═══════════════════════════════════════════════════════════
+//  START SERVER
+// ═══════════════════════════════════════════════════════════
 const PORT = process.env.PORT || 8000;
 httpServer.listen(PORT, () => {
-  console.log(`Backend Server running on port ${PORT}`);
+  log.info(`NexusAI Backend running on port ${PORT}`, {
+    env: process.env.NODE_ENV || 'development',
+    mongo: process.env.MONGODB_URI ? 'configured' : 'localhost',
+    tickers: activeTickers.length
+  });
 });

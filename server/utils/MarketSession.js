@@ -2,7 +2,7 @@ const IST_OFFSET = 5.5 * 60 * 60 * 1000;
 
 class MarketSession {
   constructor() {
-    this.simulatorOverride = false;
+    this.simulatorOverride = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test' || !process.env.NODE_ENV;
   }
 
   setSimulatorOverride(state) {

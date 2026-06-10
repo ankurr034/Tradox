@@ -1,6 +1,7 @@
 import { v4 as uuidv4 } from 'uuid';
 import { PaperAccount, PaperPosition, PaperOrder, RiskEvent } from '../models/PaperTrading.js';
 import MarketSession from '../utils/MarketSession.js';
+import MarketDataService from './MarketDataService.js';
 
 class PaperTradingEngine {
   constructor() {
@@ -72,9 +73,9 @@ class PaperTradingEngine {
     await this.loadUserContext(userId);
     const account = this.accounts.get(userId);
     
-    // 1. Simulator Price Fetch (Mocked for now, assumes real price is injected or fetched)
-    // In production this would pull from MarketAnalyticsEngine or a Live Tick cache
-    const executionPrice = orderConfig.price || 1500 + Math.random() * 50; 
+    // 1. Simulator Price Fetch - NOW ACCURATE
+    // Pull from authoritative centralized MarketDataService cache
+    const executionPrice = orderConfig.price || MarketDataService.getCurrentPrice(orderConfig.symbol); 
     
     // 2. Slippage Engine
     const slippagePct = (Math.random() * 0.001); // 0% to 0.1% slippage

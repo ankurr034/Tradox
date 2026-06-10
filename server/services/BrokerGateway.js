@@ -33,6 +33,7 @@ class BrokerGateway {
     };
     
     // Start background metrics roller
+    this.warnedAdapters = new Set();
     setInterval(() => this.rollMetrics(), 60000); // Roll every minute
   }
 
@@ -40,7 +41,10 @@ class BrokerGateway {
     const adapter = this.adapters[brokerName] || this.fallbackAdapter;
     // Check if adapter has required credentials configured
     if (adapter.isConfigured && !adapter.isConfigured()) {
-       console.warn(`[BrokerGateway] ${brokerName} is not fully configured. Falling back to Mock Sandbox.`);
+       if (!this.warnedAdapters.has(brokerName)) {
+          console.warn(`[BrokerGateway] ${brokerName} is not fully configured. Falling back to Mock Sandbox.`);
+          this.warnedAdapters.add(brokerName);
+       }
        return this.fallbackAdapter;
     }
     return adapter;
