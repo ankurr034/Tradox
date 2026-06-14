@@ -270,6 +270,33 @@ router.get('/mutual-funds', (req, res) => {
   });
 });
 
+router.post('/mutual-funds/invest', (req, res) => {
+  const { fund_name, amount, type, sip_date } = req.body;
+  if (!fund_name || !amount || !type) {
+    return res.status(400).json({ success: false, detail: 'Fund name, amount, and investment type are required' });
+  }
+
+  const numericAmt = Number(amount);
+  if (isNaN(numericAmt) || numericAmt <= 0) {
+    return res.status(400).json({ success: false, detail: 'Invalid investment amount' });
+  }
+
+  const transactionId = `TXN_MF_${Date.now()}`;
+  if (type === 'sip') {
+    return res.json({
+      success: true,
+      transaction_id: transactionId,
+      message: `Successfully started monthly SIP of ₹${numericAmt.toLocaleString('en-IN')} in ${fund_name} (SIP Date: Day ${sip_date || '5'} of each month).`
+    });
+  } else {
+    return res.json({
+      success: true,
+      transaction_id: transactionId,
+      message: `Successfully invested ₹${numericAmt.toLocaleString('en-IN')} (One-time Lumpsum) in ${fund_name}.`
+    });
+  }
+});
+
 // ═══════════════════════════════════════════════════════════
 //  Options Chain
 // ═══════════════════════════════════════════════════════════
