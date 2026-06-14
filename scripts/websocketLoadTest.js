@@ -37,7 +37,7 @@ async function reportMetrics(status = 'running') {
     await axios.post(`${SERVER_URL}/api/admin/scale/report`, payload, {
       headers: { 'x-user-token': 'Bearer test-admin-token-bypass' } // Bypass token checked on mock route
     });
-  } catch (err) {
+  } catch {
     // Fail silently if server endpoint not fully responsive during heavy load
   }
 }
@@ -101,7 +101,9 @@ setTimeout(() => {
     clients.forEach(socket => {
       try {
         socket.disconnect();
-      } catch {}
+      } catch {
+        // ignore
+      }
     });
     process.exit(0);
   });

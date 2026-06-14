@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import OrderExecutionMutex from '../utils/orderMutex.js';
 import { IdempotencyManager } from '../utils/idempotency.js';
 
@@ -7,7 +7,7 @@ describe('OrderExecutionMutex (Per-user Serialization Mutex)', () => {
     const executionOrder = [];
     const executionTimes = [];
 
-    const createTask = (id, delayMs) => async (lockAcquiredTime) => {
+    const createTask = (id, delayMs) => async (_lockAcquiredTime) => {
       const start = performance.now();
       executionOrder.push(`start-${id}`);
       await new Promise(r => setTimeout(r, delayMs));

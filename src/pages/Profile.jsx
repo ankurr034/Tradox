@@ -10,7 +10,7 @@ import BillingTab from '../components/BillingTab';
 import { getDisplayName, getAvatarInitials, shortenWallet } from '../utils/identity';
 
 export default function Profile() {
-  const { user, profile: contextProfile, logout, refreshUser } = useUser();
+  const { user, logout } = useUser();
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');

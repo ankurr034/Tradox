@@ -1,16 +1,30 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { TrendingUp, PieChart as PieIcon, ChevronRight, Calculator, CheckCircle2, Star, Shield, Sparkles, X } from 'lucide-react';
+import { TrendingUp, Calculator, CheckCircle2, Star, Shield, Sparkles, X, ChevronRight, HelpCircle, Layers, ArrowUpRight } from 'lucide-react';
 import axios from 'axios';
+import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { API_BASE_URL } from '../config';
 
-export default function MutualFunds() {
-  const [sipAmount, setSipAmount] = useState(5000);
-  const [sipYears, setSipYears] = useState(10);
-  const [funds, setFunds] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const expectedReturn = 12;
+const CATEGORIES = [
+  { id: 'All', label: 'All Funds' },
+  { id: 'Equity', label: 'High Return (Equity)' },
+  { id: 'Debt', label: 'Low Risk (Debt)' },
+  { id: 'Hybrid', label: 'Balanced (Hybrid)' },
+  { id: 'Index', label: 'Low Cost (Index)' }
+];
 
+export default function MutualFunds() {
+  // Calculator states
+  const [calcMode, setCalcMode] = useState('sip'); // sip | lumpsum
+  const [monthlyInvest, setMonthlyInvest] = useState(5000);
+  const [lumpsumInvest, setLumpsumInvest] = useState(25000);
+  const [calcYears, setCalcYears] = useState(10);
+  const [expectedRate, setExpectedRate] = useState(12);
+
+  // Funds list states
+  const [funds, setFunds] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  const [loading, setLoading] = useState(true);
   const [selectedFund, setSelectedFund] = useState(null);
 
   useEffect(() => {
@@ -27,111 +41,286 @@ export default function MutualFunds() {
     fetchFunds();
   }, []);
 
-  const totalInvestment = sipAmount * 12 * sipYears;
-  const estimatedWealth = totalInvestment * Math.pow(1 + (expectedReturn / 100), sipYears);
-  const estGains = estimatedWealth - totalInvestment;
+  // Calculator logic
+  const calcData = useMemo(() => {
+    let invested = 0;
+    let totalValue = 0;
+    let gains = 0;
+
+    if (calcMode === 'sip') {
+      const P = monthlyInvest;
+      const i = expectedRate / 12 / 100;
+      const n = calcYears * 12;
+      invested = P * n;
+      totalValue = P * ((Math.pow(1 + i, n) - 1) / i) * (1 + i);
+      gains = Math.max(0, totalValue - invested);
+    } else {
+      const P = lumpsumInvest;
+      const r = expectedRate / 100;
+      const n = calcYears;
+      invested = P;
+      totalValue = P * Math.pow(1 + r, n);
+      gains = Math.max(0, totalValue - invested);
+    }
+
+    return {
+      invested: Math.round(invested),
+      gains: Math.round(gains),
+      total: Math.round(totalValue),
+      chartData: [
+        { name: 'Invested Amount', value: Math.round(invested), color: '#3b82f6' },
+        { name: 'Est. Returns', value: Math.round(gains), color: '#00d4aa' }
+      ]
+    };
+  }, [calcMode, monthlyInvest, lumpsumInvest, calcYears, expectedRate]);
+
+  // Filtering funds based on categorisation
+  const filteredFunds = useMemo(() => {
+    if (selectedCategory === 'All') return funds;
+    return funds.filter(fund => fund.category.toLowerCase().includes(selectedCategory.toLowerCase()));
+  }, [funds, selectedCategory]);
+
+  const formatCurrency = (val) => {
+    return `₹${val.toLocaleString('en-IN')}`;
+  };
 
   return (
-    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-20">
+    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="space-y-8 pb-24">
+      {/* Banner / Header */}
+      <div className="relative rounded-3xl overflow-hidden border border-white/[0.06] bg-gradient-to-br from-[#091e19] via-surface to-surface shadow-2xl p-6 sm:p-10 md:p-12">
+        <div className="absolute top-0 right-0 w-[450px] h-[450px] bg-primary/[0.08] rounded-full blur-[160px] pointer-events-none" />
+        <div className="absolute bottom-0 left-0 w-[250px] h-[250px] bg-secondary/[0.08] rounded-full blur-[120px] pointer-events-none" />
 
-      {/* Hero Banner */}
-      <div className="relative rounded-2xl overflow-hidden border border-white/[0.06] bg-gradient-to-br from-[#071a15] via-surface to-surface shadow-2xl">
-        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-primary/[0.08] rounded-full blur-[150px] pointer-events-none" />
-        <div className="absolute bottom-0 left-0 w-[200px] h-[200px] bg-secondary/[0.08] rounded-full blur-[100px] pointer-events-none" />
+        <div className="relative z-10 max-w-3xl">
+          <div className="flex items-center gap-2 mb-4 flex-wrap">
+            <span className="px-3 py-1 bg-primary/15 text-primary border border-primary/20 text-[10px] font-black rounded-full tracking-widest uppercase shadow-[0_0_15px_rgba(0,212,170,0.2)]">
+              Direct Plans • 0% Commission
+            </span>
+            <span className="px-3 py-1 bg-white/[0.04] text-zinc-500 border border-white/[0.06] text-[10px] font-bold rounded-full tracking-widest uppercase">
+              SEBI Registered
+            </span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white leading-tight mb-4">
+            Invest in <span className="text-gradient">Mutual Funds</span> Like a Pro
+          </h1>
+          <p className="text-zinc-400 text-base sm:text-lg leading-relaxed mb-6">
+            Compare and choose from 5,000+ mutual funds. Estimate returns instantly with our live interactive calculators and track direct growth parameters.
+          </p>
 
-        <div className="relative z-10 flex flex-col lg:flex-row justify-between items-center gap-6 sm:gap-10 p-5 sm:p-8 md:p-12">
-          <div className="max-w-2xl">
-            <div className="flex items-center gap-2 mb-4">
-              <span className="px-3 py-1 bg-primary/15 text-primary border border-primary/20 text-[10px] font-bold rounded-full tracking-widest uppercase shadow-[0_0_15px_rgba(0,212,170,0.2)]">
-                Zero Commission
-              </span>
-              <span className="px-3 py-1 bg-white/[0.04] text-zinc-500 border border-white/[0.06] text-[10px] font-bold rounded-full tracking-widest uppercase">
-                Direct Plans
-              </span>
-            </div>
-            <h1 className="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-extrabold text-white leading-tight mb-3 sm:mb-5">
-              Build <span className="text-gradient">Financial Freedom</span> with Expert AMCs.
-            </h1>
-            <div className="text-zinc-500 text-lg leading-relaxed mb-6">
-              Auto-invest daily, monthly, or as a lumpsum. Over 5,000+ SEBI registered Mutual Funds, carefully organized using AI risk metrics.
-            </div>
+          <div className="flex flex-wrap gap-5 text-xs font-bold text-zinc-400">
+            <div className="flex items-center gap-2"><CheckCircle2 className="w-4.5 h-4.5 text-primary" /> Zero Commission</div>
+            <div className="flex items-center gap-2"><CheckCircle2 className="w-4.5 h-4.5 text-primary" /> Instant SIP Setup</div>
+            <div className="flex items-center gap-2"><CheckCircle2 className="w-4.5 h-4.5 text-primary" /> Multi-AMC Support</div>
+          </div>
+        </div>
+      </div>
 
-            <div className="flex flex-wrap gap-6 text-sm font-semibold text-zinc-400">
-              <div className="flex items-center gap-2.5"><CheckCircle2 className="w-5 h-5 text-primary" /> Free Account</div>
-              <div className="flex items-center gap-2.5"><CheckCircle2 className="w-5 h-5 text-primary" /> Instant KYC</div>
-              <div className="flex items-center gap-2.5"><CheckCircle2 className="w-5 h-5 text-primary" /> 0% AMC Charges</div>
-            </div>
+      {/* Groww-style Interactive SIP & Lumpsum Calculator */}
+      <div className="glass-panel p-6 sm:p-8 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-primary/5 blur-[80px] rounded-full pointer-events-none" />
+        
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8 border-b border-white/[0.06] pb-5">
+          <div>
+            <h2 className="text-xl font-extrabold text-white flex items-center gap-2.5">
+              <Calculator className="w-5 h-5 text-primary" /> Mutual Fund Return Calculator
+            </h2>
+            <p className="text-xs text-zinc-500 mt-1">Estimate wealth gained through regular monthly SIPs or single one-time lumpsums</p>
           </div>
 
-          {/* SIP Calculator */}
-          <div className="bg-surface/60 border border-white/[0.08] rounded-2xl sm:rounded-3xl p-5 sm:p-8 w-full max-w-sm shadow-[0_30px_60px_-12px_rgba(0,0,0,0.5)] relative overflow-hidden backdrop-blur-3xl">
-            <div className="absolute top-0 right-0 w-32 h-32 bg-primary/15 blur-[50px] rounded-full pointer-events-none" />
-            <div className="text-xs font-black text-white mb-6 uppercase tracking-[0.2em] flex items-center gap-3 relative z-10 opacity-70">
-              <Calculator className="w-5 h-5 text-primary" /> Wealth Estimator
-            </div>
+          {/* Tab buttons */}
+          <div className="flex gap-1.5 bg-white/[0.02] border border-white/[0.06] rounded-xl p-1 shrink-0">
+            <button
+              onClick={() => setCalcMode('sip')}
+              className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-200 ${
+                calcMode === 'sip' ? 'bg-primary text-black' : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              SIP (Monthly)
+            </button>
+            <button
+              onClick={() => setCalcMode('lumpsum')}
+              className={`px-4 py-2 rounded-lg text-xs font-black uppercase tracking-wider transition-all duration-200 ${
+                calcMode === 'lumpsum' ? 'bg-primary text-black' : 'text-zinc-400 hover:text-white'
+              }`}
+            >
+              Lumpsum (One-time)
+            </button>
+          </div>
+        </div>
 
-            <div className="space-y-7 mb-8 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+          {/* Sliders (Left Column) */}
+          <div className="lg:col-span-7 space-y-6 sm:space-y-8">
+            {calcMode === 'sip' ? (
               <div>
-                <div className="flex justify-between text-xs font-bold text-zinc-400 mb-3">
+                <div className="flex justify-between items-center text-xs font-semibold text-zinc-400 mb-3">
                   <span>Monthly Investment</span>
-                  <span className="text-primary font-black text-base font-mono-data">₹{sipAmount.toLocaleString()}</span>
+                  <div className="bg-primary/10 border border-primary/20 text-primary font-mono-data font-black text-sm px-3 py-1 rounded-lg">
+                    {formatCurrency(monthlyInvest)}
+                  </div>
                 </div>
                 <input
                   type="range" min="500" max="100000" step="500"
-                  value={sipAmount}
-                  onChange={(e) => setSipAmount(Number(e.target.value))}
-                  className="w-full accent-[#00d4aa] h-1.5 bg-white/[0.06] rounded-lg appearance-none cursor-pointer"
+                  value={monthlyInvest}
+                  onChange={(e) => setMonthlyInvest(Number(e.target.value))}
+                  className="w-full accent-primary h-1.5 bg-white/[0.06] rounded-lg appearance-none cursor-pointer"
                 />
+                <div className="flex justify-between text-[10px] text-zinc-600 mt-1">
+                  <span>₹500</span>
+                  <span>₹1,00,000</span>
+                </div>
               </div>
+            ) : (
               <div>
-                <div className="flex justify-between text-xs font-bold text-zinc-400 mb-3">
-                  <span>Time Horizon</span>
-                  <span className="text-primary font-black text-base">{sipYears} Years</span>
+                <div className="flex justify-between items-center text-xs font-semibold text-zinc-400 mb-3">
+                  <span>Total Lumpsum Investment</span>
+                  <div className="bg-primary/10 border border-primary/20 text-primary font-mono-data font-black text-sm px-3 py-1 rounded-lg">
+                    {formatCurrency(lumpsumInvest)}
+                  </div>
                 </div>
                 <input
-                  type="range" min="1" max="40" step="1"
-                  value={sipYears}
-                  onChange={(e) => setSipYears(Number(e.target.value))}
-                  className="w-full accent-[#00d4aa] h-1.5 bg-white/[0.06] rounded-lg appearance-none cursor-pointer"
+                  type="range" min="1000" max="1000000" step="1000"
+                  value={lumpsumInvest}
+                  onChange={(e) => setLumpsumInvest(Number(e.target.value))}
+                  className="w-full accent-primary h-1.5 bg-white/[0.06] rounded-lg appearance-none cursor-pointer"
                 />
+                <div className="flex justify-between text-[10px] text-zinc-600 mt-1">
+                  <span>₹1,000</span>
+                  <span>₹10,00,000</span>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div className="flex justify-between items-center text-xs font-semibold text-zinc-400 mb-3">
+                <span>Expected Return Rate (p.a.)</span>
+                <div className="bg-amber-400/10 border border-amber-400/20 text-amber-400 font-mono-data font-black text-sm px-3 py-1 rounded-lg">
+                  {expectedRate}%
+                </div>
+              </div>
+              <input
+                type="range" min="1" max="30" step="0.5"
+                value={expectedRate}
+                onChange={(e) => setExpectedRate(Number(e.target.value))}
+                className="w-full accent-amber-400 h-1.5 bg-white/[0.06] rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-zinc-600 mt-1">
+                <span>1%</span>
+                <span>30%</span>
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-6 border-t border-white/[0.06] pt-6 relative z-10">
-              <div>
-                <div className="text-[10px] uppercase font-black text-zinc-600 tracking-widest mb-1">Invested</div>
-                <div className="font-bold text-white text-lg font-mono-data">₹{totalInvestment.toLocaleString()}</div>
+            <div>
+              <div className="flex justify-between items-center text-xs font-semibold text-zinc-400 mb-3">
+                <span>Time Period</span>
+                <div className="bg-white/5 border border-white/10 text-white font-mono-data font-black text-sm px-3 py-1 rounded-lg">
+                  {calcYears} Years
+                </div>
               </div>
-              <div>
-                <div className="text-[10px] uppercase font-black text-zinc-600 tracking-widest mb-1">Growth</div>
-                <div className="font-bold text-emerald-400 text-lg font-mono-data">+₹{estGains.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+              <input
+                type="range" min="1" max="40" step="1"
+                value={calcYears}
+                onChange={(e) => setCalcYears(Number(e.target.value))}
+                className="w-full accent-white h-1.5 bg-white/[0.06] rounded-lg appearance-none cursor-pointer"
+              />
+              <div className="flex justify-between text-[10px] text-zinc-600 mt-1">
+                <span>1 Year</span>
+                <span>40 Years</span>
               </div>
-              <div className="col-span-2 mt-2 pt-4 border-t border-white/[0.06]">
-                <div className="text-[10px] uppercase font-black text-zinc-500 tracking-widest mb-1">Total Expected Wealth (12% CAGR)</div>
-                <div className="font-black text-3xl text-white font-mono-data tracking-tight">₹{estimatedWealth.toLocaleString(undefined, { maximumFractionDigits: 0 })}</div>
+            </div>
+          </div>
+
+          {/* Visuals & Donut Chart (Right Column) */}
+          <div className="lg:col-span-5 flex flex-col sm:flex-row lg:flex-col items-center gap-6 border-t lg:border-t-0 lg:border-l border-white/[0.06] pt-6 lg:pt-0 lg:pl-8">
+            {/* Recharts Donut Chart */}
+            <div className="w-48 h-48 shrink-0 relative flex items-center justify-center">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={calcData.chartData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={55}
+                    outerRadius={75}
+                    paddingAngle={3}
+                    dataKey="value"
+                  >
+                    {calcData.chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{ background: '#0a0a0f', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 12 }}
+                    formatter={(val) => [formatCurrency(val)]}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+              <div className="absolute flex flex-col items-center justify-center">
+                <span className="text-[10px] font-black text-zinc-500 uppercase tracking-widest leading-none">Est. Wealth</span>
+                <span className="text-base font-black text-white mt-1 leading-none truncate max-w-[130px]">{formatCurrency(calcData.total)}</span>
+              </div>
+            </div>
+
+            {/* Calculations Breakdown */}
+            <div className="w-full space-y-4">
+              <div className="flex justify-between items-center text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-blue-500" />
+                  <span className="text-zinc-500 font-bold">Invested Amount</span>
+                </div>
+                <span className="font-bold text-white font-mono-data">{formatCurrency(calcData.invested)}</span>
+              </div>
+
+              <div className="flex justify-between items-center text-xs">
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded bg-primary" />
+                  <span className="text-zinc-500 font-bold">Est. Returns</span>
+                </div>
+                <span className="font-bold text-emerald-400 font-mono-data">+{formatCurrency(calcData.gains)}</span>
+              </div>
+
+              <div className="h-px bg-white/[0.06] pt-1" />
+
+              <div className="flex justify-between items-center">
+                <span className="text-xs font-black uppercase text-zinc-400 tracking-wider">Total Value</span>
+                <span className="text-lg font-black text-white font-mono-data">{formatCurrency(calcData.total)}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Fund List */}
+      {/* Fund Categories Selector */}
       <div>
-        <div className="flex justify-between items-end mb-8 px-2">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end mb-8 gap-4 px-2">
           <div>
-            <h2 className="text-2xl font-extrabold text-white flex items-center gap-3">
-              <Sparkles className="w-6 h-6 text-primary" /> Trending Growth Funds
+            <h2 className="text-2xl font-extrabold text-white flex items-center gap-2.5">
+              <Sparkles className="w-6 h-6 text-primary" /> Popular Mutual Funds
             </h2>
-            <div className="text-zinc-600 text-sm mt-1">Curated high-performance direct plans</div>
+            <div className="text-zinc-500 text-sm mt-1">Direct plans with high direct compound annual returns</div>
           </div>
-          <button className="text-[10px] font-black tracking-widest text-primary hover:text-white transition-all bg-primary/5 hover:bg-primary/10 border border-primary/20 px-4 py-2 rounded-full uppercase">
-            Browse All 5,000+ Funds
-          </button>
+
+          <div className="flex gap-2 overflow-x-auto no-scrollbar max-w-full pb-1">
+            {CATEGORIES.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider whitespace-nowrap transition-all border shrink-0 ${
+                  selectedCategory === cat.id
+                    ? 'bg-primary/20 text-primary border-primary/30'
+                    : 'bg-white/5 text-zinc-400 border-white/10 hover:bg-white/10 hover:text-zinc-300'
+                }`}
+              >
+                {cat.label}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        {/* Dynamic Funds Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            Array.from({ length: 9 }).map((_, i) => (
+            Array.from({ length: 6 }).map((_, i) => (
               <div key={i} className="glass-panel p-6 space-y-4 animate-pulse">
                 <div className="flex justify-between items-start">
                   <div className="w-12 h-12 bg-white/[0.04] rounded-2xl" />
@@ -148,8 +337,8 @@ export default function MutualFunds() {
                 </div>
               </div>
             ))
-          ) : (
-            funds.map((fund, idx) => (
+          ) : filteredFunds.length > 0 ? (
+            filteredFunds.map((fund, idx) => (
               <motion.div
                 key={idx}
                 initial={{ opacity: 0, rotateX: -10, y: 20 }}
@@ -203,6 +392,10 @@ export default function MutualFunds() {
                 </div>
               </motion.div>
             ))
+          ) : (
+            <div className="col-span-full py-16 text-center">
+              <p className="text-sm text-zinc-500">No mutual funds matching this category currently found.</p>
+            </div>
           )}
         </div>
       </div>
@@ -224,7 +417,7 @@ export default function MutualFunds() {
               exit={{ scale: 0.9, opacity: 0, y: 20 }}
               className="relative w-full max-w-2xl bg-surface border border-white/[0.08] rounded-3xl overflow-hidden shadow-[0_0_80px_rgba(0,0,0,0.5)]"
             >
-              <div className="p-8 space-y-8">
+              <div className="p-8 space-y-8 text-left">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center gap-5">
                     <div className="w-16 h-16 rounded-2xl border border-white/10 flex items-center justify-center" style={{ backgroundColor: `${selectedFund.color}15` }}>
@@ -235,7 +428,7 @@ export default function MutualFunds() {
                       <div className="text-zinc-500 font-bold uppercase tracking-widest text-xs mt-1">{selectedFund.category}</div>
                     </div>
                   </div>
-                  <button onClick={() => setSelectedFund(null)} className="p-2 hover:bg-white/5 rounded-xl transition-colors">
+                  <button onClick={() => setSelectedFund(null)} className="p-2 hover:bg-white/5 rounded-xl transition-colors cursor-pointer">
                     <X className="w-6 h-6 text-zinc-500" />
                   </button>
                 </div>
@@ -255,7 +448,7 @@ export default function MutualFunds() {
                   </div>
                   <div className="bg-white/[0.03] p-4 rounded-2xl border border-white/[0.04]">
                     <div className="text-[10px] uppercase font-black text-zinc-600 mb-1">Risk Scale</div>
-                    <div className={`text-lg font-black ${selectedFund.risk === 'Very High' ? 'text-red-400' : 'text-amber-400'}`}>{selectedFund.risk}</div>
+                    <div className={`text-lg font-black ${selectedFund.risk === 'Very High' ? 'text-red-400' : selectedFund.risk === 'High' ? 'text-amber-400' : 'text-emerald-400'}`}>{selectedFund.risk}</div>
                   </div>
                 </div>
 
@@ -265,25 +458,25 @@ export default function MutualFunds() {
                   </h4>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
-                      <ChevronRight className="w-3 h-3 text-primary" /> Verified SEBI Registered
+                      <ChevronRight className="w-3.5 h-3.5 text-primary" /> Verified SEBI Registered
                     </div>
                     <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
-                      <ChevronRight className="w-3 h-3 text-primary" /> Zero Commission Direct Plan
+                      <ChevronRight className="w-3.5 h-3.5 text-primary" /> Zero Commission Direct Plan
                     </div>
                     <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
-                      <ChevronRight className="w-3 h-3 text-primary" /> Instant Redemption Available
+                      <ChevronRight className="w-3.5 h-3.5 text-primary" /> Instant Redemption Available
                     </div>
                     <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
-                      <ChevronRight className="w-3 h-3 text-primary" /> Multi-Layer Fund AI Analysis
+                      <ChevronRight className="w-3.5 h-3.5 text-primary" /> Multi-Layer Fund AI Analysis
                     </div>
                   </div>
                 </div>
 
                 <div className="pt-4 flex gap-4">
-                  <button className="flex-1 py-4 bg-primary text-black font-black uppercase tracking-widest rounded-2xl hover:shadow-[0_0_30px_rgba(0,212,170,0.3)] transition-all">
+                  <button className="flex-1 py-4 bg-primary text-black font-black uppercase tracking-widest rounded-2xl hover:shadow-[0_0_30px_rgba(0,212,170,0.3)] transition-all cursor-pointer">
                     Start Monthly SIP
                   </button>
-                  <button className="flex-1 py-4 bg-white/[0.04] border border-white/10 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.08] transition-all">
+                  <button className="flex-1 py-4 bg-white/[0.04] border border-white/10 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.08] transition-all cursor-pointer">
                     One-time Lumpsum
                   </button>
                 </div>

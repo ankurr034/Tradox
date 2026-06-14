@@ -11,10 +11,13 @@ export default function SmartAlerts() {
   useEffect(() => {
     if (alertData) {
       const newAlert = { ...alertData, id: Date.now() };
-      setAlerts(prev => [newAlert, ...prev].slice(0, 5));
-      setTimeout(() => {
+      Promise.resolve().then(() => {
+        setAlerts(prev => [newAlert, ...prev].slice(0, 5));
+      });
+      const timer = setTimeout(() => {
         setAlerts(prev => prev.filter(a => a.id !== newAlert.id));
       }, 8000);
+      return () => clearTimeout(timer);
     }
   }, [alertData]);
 

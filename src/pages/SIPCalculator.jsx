@@ -20,30 +20,26 @@ export default function SIPCalculator() {
   const [sipData, setSipData] = useState(null);
   const [goalAmount, setGoalAmount] = useState(10000000);
   const [goalData, setGoalData] = useState(null);
-  const [loading, setLoading] = useState(false);
-
-  useEffect(() => {
-    if (mode === 'sip') fetchSIP();
-    else fetchGoal();
-  }, [monthly, years, rate, mode, goalAmount]);
-
-  const fetchSIP = async () => {
-    setLoading(true);
+  const fetchSIP = React.useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/calculator/sip?monthly=${monthly}&years=${years}&rate=${rate}`);
       setSipData(res.data);
     } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+  }, [monthly, years, rate]);
 
-  const fetchGoal = async () => {
-    setLoading(true);
+  const fetchGoal = React.useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/calculator/goal?goal_amount=${goalAmount}&years=${years}&rate=${rate}`);
       setGoalData(res.data);
     } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+  }, [goalAmount, years, rate]);
+
+  useEffect(() => {
+    Promise.resolve().then(() => {
+      if (mode === 'sip') fetchSIP();
+      else fetchGoal();
+    });
+  }, [mode, fetchSIP, fetchGoal]);
 
   const formatCurrency = (val) => {
     if (val >= 10000000) return `₹${(val / 10000000).toFixed(2)} Cr`;

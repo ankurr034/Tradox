@@ -11,10 +11,10 @@ import { Server } from 'socket.io';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
-import logger, { createLogger } from './utils/logger.js';
+import { createLogger } from './utils/logger.js';
 import { trackMetricsMiddleware, getPrometheusMetrics, incrementActiveWebsockets, decrementActiveWebsockets, incrementSocketReconnect } from './middleware/metrics.js';
-import { cacheEndpoint } from './middleware/cache.js';
-import Sentry from '@sentry/node';
+import { cacheEndpoint, isRedisReady } from './middleware/cache.js';
+import * as Sentry from '@sentry/node';
 import { register, correlationIdMiddleware, httpLatencyHistogram, activeSocketGauge, socketBroadcastsCounter } from './utils/telemetry.js';
 
 // Routes
@@ -43,9 +43,38 @@ import { getAllUniqueSymbols } from './data/indexConstituents.js';
 dotenv.config();
 mongoose.set('bufferCommands', false);
 
+// ═══════════════════════════════════════════════════════════
+//  GLOBAL CORS CONFIGURATION
+// ═══════════════════════════════════════════════════════════
+const explicitOrigins = (process.env.FRONTEND_URL || '')
+  .split(',')
+  .map((s) => s.trim())
+  .filter(Boolean);
+
+const devLocalhost = [
+  'http://localhost:5173',
+  'http://localhost:5174',
+  'http://localhost:5175',
+  'http://localhost:3000'
+];
+
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? explicitOrigins
+  : [...new Set([...devLocalhost, ...explicitOrigins])];
+
+const corsOriginChecker = (origin, callback) => {
+  if (!origin) return callback(null, true);
+  if (allowedOrigins.includes(origin)) return callback(null, true);
+  if (process.env.NODE_ENV !== 'production' && 
+      (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin))) {
+    return callback(null, true);
+  }
+  return callback(new Error('Not allowed by CORS'));
+};
+
 const log = createLogger('Server');
 const wsLog = createLogger('WebSocket');
-const mktLog = createLogger('MarketData');
+const _mktLog = createLogger('MarketData');
 
 // ═══════════════════════════════════════════════════════════
 //  Startup Environment Validation
@@ -74,10 +103,6 @@ process.on('unhandledRejection', (reason) => {
 // ═══════════════════════════════════════════════════════════
 const app = express();
 
-// Sentry Request Handlers must be the first middleware on the app
-app.use(Sentry.Handlers.requestHandler());
-app.use(Sentry.Handlers.tracingHandler());
-
 // Correlation ID Tracking
 app.use(correlationIdMiddleware);
 
@@ -104,7 +129,7 @@ const httpServer = createServer(app);
 // ═══════════════════════════════════════════════════════════
 const io = new Server(httpServer, {
   cors: {
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: corsOriginChecker,
     methods: ['GET', 'POST']
   },
   pingInterval: 25000,     // Server-side heartbeat every 25s
@@ -178,15 +203,13 @@ const IS_TIMER_LEADER = String(INSTANCE_ID) === '0';
 //  SECURITY MIDDLEWARE STACK
 // ═══════════════════════════════════════════════════════════
 
-// 1. Helmet: HTTP security headers with strong Content Security Policy (CSP)
+// 1. Helmet: HTTP security headers with strict Content Security Policy (CSP)
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
       scriptSrc: [
         "'self'", 
-        "'unsafe-inline'", // for inline script injections like TradingView or dynamic script components
-        "'unsafe-eval'",   // some dynamic compiling libraries require this, e.g. lodash template
         "https://s3.tradingview.com", 
         "https://checkout.razorpay.com", 
         "https://accounts.google.com"
@@ -246,40 +269,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// 2. CORS
-// Production allows ONLY the explicit origins in FRONTEND_URL (comma-separated).
-// Localhost is auto-trusted in development only, so a deployed API never
-// accepts requests from an arbitrary localhost:* origin.
-const explicitOrigins = (process.env.FRONTEND_URL || '')
-  .split(',')
-  .map((s) => s.trim())
-  .filter(Boolean);
-
-const devLocalhost = [
-  'http://localhost:5173',
-  'http://localhost:5174',
-  'http://localhost:5175',
-  'http://localhost:3000'
-];
-
-const allowedOrigins = process.env.NODE_ENV === 'production'
-  ? explicitOrigins
-  : [...new Set([...devLocalhost, ...explicitOrigins])];
-
 if (process.env.NODE_ENV === 'production' && explicitOrigins.length === 0) {
   log.warn('CORS: FRONTEND_URL is not set in production — all cross-origin browser requests will be rejected.');
 }
 
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true); // Allow server-to-server or Postman
-    if (allowedOrigins.includes(origin)) return callback(null, true);
-    // In development only, trust any localhost port for convenience.
-    if (process.env.NODE_ENV !== 'production' && /^http:\/\/localhost:\d+$/.test(origin)) {
-      return callback(null, true);
-    }
-    return callback(new Error('Not allowed by CORS'));
-  },
+  origin: corsOriginChecker,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true
 }));
@@ -534,7 +529,7 @@ const wsMetrics = {
 
 import { JWT_SECRET } from './utils/secrets.js';
 
-io.use((socket, next) => {
+io.use(async (socket, next) => {
   const token = socket.handshake.auth?.userToken || socket.handshake.headers?.['x-user-token'] || socket.handshake.query?.token;
   
   if (!token) {
@@ -544,9 +539,22 @@ io.use((socket, next) => {
   const tokenStr = token.startsWith('Bearer ') ? token.split(' ')[1] : token;
   try {
     const decoded = jwt.verify(tokenStr, JWT_SECRET, { algorithms: ['HS256'] });
+    
+    // Validate critical claims
+    if (!decoded.exp || !decoded.iat || !decoded.id) {
+      return next(new Error('Authentication error: Invalid token structure'));
+    }
+
+    // Dynamic database check to support instant revocation/block/logout
+    const User = (await import('./models/User.js')).default;
+    const userExists = await User.exists({ _id: decoded.id });
+    if (!userExists) {
+      return next(new Error('Authentication error: User session revoked'));
+    }
+
     socket.user = decoded;
     next();
-  } catch (err) {
+  } catch {
     return next(new Error('Authentication error: Invalid or expired token'));
   }
 });
@@ -737,7 +745,7 @@ setInterval(() => {
 // ═══════════════════════════════════════════════════════════
 //  MARKET DATA ENGINE — Enhanced Polling Fallback (Local mode)
 // ═══════════════════════════════════════════════════════════
-if (!process.env.REDIS_URL) {
+if (!process.env.REDIS_URL || !isRedisReady) {
   // Poll index tickers at high frequency, stock tickers in batches
   MarketDataService.startPolling(indexTickers, 5000);
   // Batch-poll all heatmap constituents at a lower frequency
@@ -817,12 +825,14 @@ setInterval(() => {
 }
 
 // Sentry error handler must be before any other error middleware
-app.use(Sentry.Handlers.errorHandler());
+if (typeof Sentry.setupExpressErrorHandler === 'function') {
+  Sentry.setupExpressErrorHandler(app);
+}
 
 // ═══════════════════════════════════════════════════════════
 //  GLOBAL ERROR HANDLER
 // ═══════════════════════════════════════════════════════════
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   log.error('Unhandled Express Error', { method: req.method, url: req.originalUrl, error: err.message, stack: err.stack });
   res.status(500).json({ error: 'Internal Server Error', detail: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message });
 });

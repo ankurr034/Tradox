@@ -90,7 +90,7 @@ export const requirePremium = async (req, res, next) => {
         return res.status(403).json({ success: false, error: 'Premium subscription required' });
       }
       next();
-    } catch (err) {
+    } catch {
       res.status(500).json({ success: false, error: 'Internal authorization error' });
     }
   });

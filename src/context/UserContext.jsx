@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import axios from '../utils/axiosSetup';
 import { API_BASE_URL } from '../config';
 
@@ -13,25 +14,19 @@ export const UserProvider = ({ children }) => {
   const [isLiveMode, setIsLiveMode] = useState(localStorage.getItem('nexus_is_live') === 'true');
   const [brokerConnected, setBrokerConnected] = useState(false);
 
-  useEffect(() => {
-    // Check for saved user ID in local storage
-    const savedUserId = localStorage.getItem('nexus_user_id');
-    if (savedUserId) {
-      fetchUserData(savedUserId);
-    } else {
-      setLoading(false);
-    }
-    
-    const handleBrokerExpired = () => {
-      console.log('[USER CONTEXT] Broker session completely expired. Disconnecting locally.');
-      setBrokerConnected(false);
-    };
-    
-    window.addEventListener('broker_session_expired', handleBrokerExpired);
-    return () => window.removeEventListener('broker_session_expired', handleBrokerExpired);
+  const logout = useCallback(() => {
+    localStorage.removeItem('nexus_user_id');
+    localStorage.removeItem('nexus_jwt');
+    localStorage.removeItem('nexus_is_live');
+    localStorage.removeItem('broker_access_token');
+    localStorage.removeItem('broker_refresh_token');
+    localStorage.removeItem('broker_expires_at');
+    setUser(null);
+    setProfile(null);
+    setIsLiveMode(false);
   }, []);
 
-  const fetchUserData = async (userId) => {
+  const fetchUserData = useCallback(async (userId) => {
     if (!userId) {
       setLoading(false);
       return;
@@ -88,9 +83,27 @@ export const UserProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [logout]);
 
-  const login = async (username, password) => {
+  useEffect(() => {
+    // Check for saved user ID in local storage
+    const savedUserId = localStorage.getItem('nexus_user_id');
+    if (savedUserId) {
+      fetchUserData(savedUserId);
+    } else {
+      setLoading(false);
+    }
+    
+    const handleBrokerExpired = () => {
+      console.log('[USER CONTEXT] Broker session completely expired. Disconnecting locally.');
+      setBrokerConnected(false);
+    };
+    
+    window.addEventListener('broker_session_expired', handleBrokerExpired);
+    return () => window.removeEventListener('broker_session_expired', handleBrokerExpired);
+  }, [fetchUserData]);
+
+  const login = useCallback(async (username, password) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password });
       localStorage.setItem('nexus_user_id', res.data.user_id);
@@ -110,9 +123,9 @@ export const UserProvider = ({ children }) => {
       }
       return { success: false, error: err.response?.data?.detail || `Login failed` };
     }
-  };
+  }, [fetchUserData]);
 
-  const loginWithWallet = async (token, userData) => {
+  const loginWithWallet = useCallback(async (token, userData) => {
     localStorage.setItem('nexus_jwt', token);
     localStorage.setItem('nexus_user_id', userData.walletAddress);
     
@@ -137,9 +150,9 @@ export const UserProvider = ({ children }) => {
     });
     
     return { success: true };
-  };
+  }, [isLiveMode]);
 
-  const loginWithGoogle = async (credential) => {
+  const loginWithGoogle = useCallback(async (credential) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/google`, { credential });
       localStorage.setItem('nexus_user_id', res.data.user_id);
@@ -159,9 +172,9 @@ export const UserProvider = ({ children }) => {
       }
       return { success: false, error: err.response?.data?.detail || 'Google sign-in failed' };
     }
-  };
+  }, [fetchUserData]);
 
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     try {
       await axios.post(`${API_BASE_URL}/api/auth/register`, userData);
       return { success: true };
@@ -172,21 +185,10 @@ export const UserProvider = ({ children }) => {
       }
       return { success: false, error: err.response?.data?.detail || `Registration failed` };
     }
-  };
+  }, []);
 
-  const logout = () => {
-    localStorage.removeItem('nexus_user_id');
-    localStorage.removeItem('nexus_jwt');
-    localStorage.removeItem('nexus_is_live');
-    localStorage.removeItem('broker_access_token');
-    localStorage.removeItem('broker_refresh_token');
-    localStorage.removeItem('broker_expires_at');
-    setUser(null);
-    setProfile(null);
-    setIsLiveMode(false);
-  };
-
-  const toggleMode = async () => {
+  const toggleMode = useCallback(async () => {
+    if (!user) return { success: false, error: 'User not logged in' };
     const newMode = isLiveMode ? 'demo' : 'live';
     try {
       await axios.post(`${API_BASE_URL}/api/profile/update?user_id=${user.id}`, {
@@ -194,9 +196,7 @@ export const UserProvider = ({ children }) => {
       });
       setIsLiveMode(!isLiveMode);
       localStorage.setItem('nexus_is_live', String(!isLiveMode));
-      if (user) {
-        setUser({ ...user, account_mode: newMode });
-      }
+      setUser({ ...user, account_mode: newMode });
       window.dispatchEvent(new Event('broker_token_updated'));
       return { success: true };
     } catch (err) {
@@ -204,19 +204,21 @@ export const UserProvider = ({ children }) => {
       // Mock toggle for offline frontend simulation or if DB times out
       setIsLiveMode(!isLiveMode);
       localStorage.setItem('nexus_is_live', String(!isLiveMode));
-      if (user) {
-        setUser({ ...user, account_mode: newMode });
-      }
+      setUser({ ...user, account_mode: newMode });
       window.dispatchEvent(new Event('broker_token_updated'));
       return { success: true };
     }
-  };
+  }, [isLiveMode, user]);
 
-  const upgradeToPremium = (plan, expiry) => {
+  const upgradeToPremium = useCallback((plan, expiry) => {
     if (user) {
       setUser({ ...user, isPremium: true, subscription_plan: plan, premium_expiry: expiry });
     }
-  };
+  }, [user]);
+
+  const refreshUser = useCallback(() => {
+    if (user?.id) fetchUserData(user.id);
+  }, [user, fetchUserData]);
 
   const contextValue = useMemo(() => ({
     user, 
@@ -231,10 +233,22 @@ export const UserProvider = ({ children }) => {
     logout, 
     toggleMode,
     upgradeToPremium,
-    refreshUser: () => {
-      if (user?.id) fetchUserData(user.id);
-    }
-  }), [user, profile, loading, isLiveMode, brokerConnected]);
+    refreshUser
+  }), [
+    user, 
+    profile, 
+    loading, 
+    isLiveMode, 
+    brokerConnected, 
+    login, 
+    loginWithWallet, 
+    loginWithGoogle, 
+    register, 
+    logout, 
+    toggleMode, 
+    upgradeToPremium, 
+    refreshUser
+  ]);
 
   return (
     <UserContext.Provider value={contextValue}>

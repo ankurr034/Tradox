@@ -8,7 +8,7 @@ import { API_BASE_URL } from '../config';
 
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
-  static getDerivedStateFromError(error) { return { hasError: true }; }
+  static getDerivedStateFromError(_error) { return { hasError: true }; }
   render() {
     if (this.state.hasError) {
       return <div className="p-8 text-center glass-panel border-rose-500/20"><AlertTriangle className="w-8 h-8 text-rose-400 mx-auto mb-4" /><h3 className="text-white font-bold mb-2">X-Ray Rendering Failed</h3><p className="text-zinc-500 text-sm">Failed to map AI insights to the dashboard. Please try refreshing.</p></div>;
@@ -27,16 +27,16 @@ export default function PortfolioXray() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
-  useEffect(() => { fetchXray(); }, []);
-
-  const fetchXray = async () => {
+  const fetchXray = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/portfolio/xray?user_id=${user?.id || 1}`);
       setData(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [user]);
+
+  useEffect(() => { fetchXray(); }, [fetchXray]);
 
   if (loading) return <div className="py-20 text-center"><Loader2 className="w-8 h-8 text-primary mx-auto animate-spin" /></div>;
   if (!data) return null;
@@ -322,7 +322,7 @@ export default function PortfolioXray() {
               </tr>
             </thead>
             <tbody>
-              {corrMatrix.map((row, ri) => (
+              {corrMatrix.map((row) => (
                 <tr key={row.symbol}>
                   <td className="p-3 text-xs font-bold text-zinc-400">{row.symbol}</td>
                   {corrMatrix.map((col, ci) => {

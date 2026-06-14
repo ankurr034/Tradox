@@ -32,7 +32,7 @@ export default function AdminDashboard() {
   const [isOperatingQueue, setIsOperatingQueue] = useState(null);
 
   // Standard fetch function
-  const fetchAdminData = async () => {
+  const fetchAdminData = React.useCallback(async () => {
     if (!user || (!user.isAdmin && user.username !== 'admin')) return;
     try {
       const [brokerRes, queueRes, scaleRes] = await Promise.all([
@@ -50,9 +50,9 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Failed to fetch admin stats', err);
     }
-  };
+  }, [user]);
 
-  const fetchQueueData = async () => {
+  const fetchQueueData = React.useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/admin/queues`);
       if (res.data?.queues) {
@@ -61,7 +61,7 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Failed to fetch queue stats', err);
     }
-  };
+  }, []);
 
   // Poll for data
   useEffect(() => {
@@ -75,7 +75,7 @@ export default function AdminDashboard() {
     }, 10000); // Poll every 10s as a fallback
 
     return () => clearInterval(interval);
-  }, [user]);
+  }, [user, fetchAdminData]);
 
   // WebSocket for Real-Time Telemetry
   useEffect(() => {
@@ -99,8 +99,8 @@ export default function AdminDashboard() {
   }, [socket, user]);
 
   useEffect(() => {
-    if (adminData?.data && liveStats.length === 0) {
-       setLiveStats(adminData.data);
+    if (adminData?.data) {
+       setLiveStats(prev => prev.length === 0 ? adminData.data : prev);
     }
     if (adminData?.buffer) {
        setTelemetryBuffer(adminData.buffer);
@@ -132,7 +132,7 @@ export default function AdminDashboard() {
        const res = await axios.post(`${API_BASE_URL}/api/admin/broker/clear-cache`);
        addToast('success', res.data.message || 'Cache Cleared');
        fetchAdminData();
-    } catch (err) {
+    } catch {
        addToast('error', 'Failed to clear cache');
     } finally {
        setIsClearingCache(false);
@@ -144,7 +144,7 @@ export default function AdminDashboard() {
        const res = await axios.post(`${API_BASE_URL}/api/admin/broker/disconnect`, { broker_name });
        addToast('success', res.data.message || 'Broker Disconnected');
        fetchAdminData();
-    } catch (err) {
+    } catch {
        addToast('error', 'Failed to disconnect broker');
     }
   };

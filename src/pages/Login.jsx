@@ -28,7 +28,7 @@ const Login = () => {
     }
   }, []);
 
-  const handleWeb3Login = async () => {
+  const _handleWeb3Login = async () => {
     if (typeof window.ethereum === 'undefined') {
       toast.error('MetaMask is not installed. Please install it to continue.');
       return;
@@ -49,7 +49,7 @@ const Login = () => {
         if (nonceRes.data.nonce) {
           nonce = nonceRes.data.nonce;
         }
-      } catch (err) {
+      } catch {
         console.warn('Could not fetch nonce from backend, using local nonce for demo mode');
       }
 
@@ -69,7 +69,7 @@ const Login = () => {
           message: nonce
         });
         authData = authRes.data;
-      } catch (err) {
+      } catch {
         console.warn('Backend Web3 auth failed, falling back to demo mode');
       }
 

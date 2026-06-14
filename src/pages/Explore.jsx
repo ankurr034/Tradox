@@ -37,10 +37,10 @@ export default function Explore() {
   const [themeLoading, setThemeLoading] = useState(false);
   const [marketPulse, setMarketPulse] = useState({ sentiment: 68, trend: 'Bullish', fear_greed: 'Greed', signal: 'BUY' });
   const [watchlistLoading, setWatchlistLoading] = useState(false);
-  const [heatmapSummary, setHeatmapSummary] = useState(null);
   const [selectedHeatmapSection, setSelectedHeatmapSection] = useState('NIFTY_50');
   const [heatmapStocks, setHeatmapStocks] = useState([]);
   const [heatmapLoading, setHeatmapLoading] = useState(false);
+  const [expandedSection, setExpandedSection] = useState({ top_picks: false, most_traded: false, volume_surged: false });
   const { user } = useUser();
   const toast = useToast();
 
@@ -80,9 +80,6 @@ export default function Explore() {
         
         const pulseRes = await axios.get(`${API_BASE_URL}/api/market/pulse`);
         setMarketPulse(pulseRes.data);
-
-        const summaryRes = await axios.get(`${API_BASE_URL}/api/heatmap/summary`);
-        setHeatmapSummary(summaryRes.data);
       } catch (e) {
         console.error('Error fetching', e);
         toast.error('Failed to load market data');
@@ -97,12 +94,12 @@ export default function Explore() {
        axios.get(`${API_BASE_URL}/api/watchlist?user_id=${user.id}`)
          .then(res => setWatchlist(res.data.watchlist))
          .catch(e => {
-           console.error(e);
-           toast.error('Failed to load watchlist');
-         })
+            console.error(e);
+            toast.error('Failed to load watchlist');
+          })
          .finally(() => setWatchlistLoading(false));
     }
-  }, [user]);
+  }, [user, toast]);
 
   useEffect(() => {
     const fetchHeatmapData = async () => {
@@ -479,11 +476,14 @@ export default function Explore() {
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Zap className="w-5 h-5 text-yellow-400" /> Top Picks by AI Engine
           </h2>
-          <button className="flex items-center gap-1 text-[10px] font-black text-primary hover:text-white transition-colors uppercase tracking-[0.2em]">
-            See more <ChevronRight className="w-3.5 h-3.5" />
+          <button 
+            onClick={() => setExpandedSection(prev => ({ ...prev, top_picks: !prev.top_picks }))}
+            className="flex items-center gap-1 text-[10px] font-black text-primary hover:text-white transition-colors uppercase tracking-[0.2em]"
+          >
+            {expandedSection.top_picks ? 'See less' : 'See more'} <ChevronRight className={`w-3.5 h-3.5 transform transition-transform ${expandedSection.top_picks ? 'rotate-90' : ''}`} />
           </button>
         </div>
-        <div className="flex overflow-x-auto gap-4 pb-2 hide-scrollbar">
+        <div className={expandedSection.top_picks ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-2" : "flex overflow-x-auto gap-4 pb-2 hide-scrollbar"}>
           {(!loading && data.top_picks.length > 0) ? data.top_picks.map((stock, i) => (
             <StockCard key={i} stock={stock} isWatchlisted={watchlist.includes(stock.symbol)} />
           )) : (
@@ -505,8 +505,14 @@ export default function Explore() {
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <Activity className="w-5 h-5 text-sky-400" /> Most Traded on Nifty 50
           </h2>
+          <button 
+            onClick={() => setExpandedSection(prev => ({ ...prev, most_traded: !prev.most_traded }))}
+            className="flex items-center gap-1 text-[10px] font-black text-primary hover:text-white transition-colors uppercase tracking-[0.2em]"
+          >
+            {expandedSection.most_traded ? 'See less' : 'See more'} <ChevronRight className={`w-3.5 h-3.5 transform transition-transform ${expandedSection.most_traded ? 'rotate-90' : ''}`} />
+          </button>
         </div>
-        <div className="flex overflow-x-auto gap-4 pb-2 hide-scrollbar">
+        <div className={expandedSection.most_traded ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-2" : "flex overflow-x-auto gap-4 pb-2 hide-scrollbar"}>
           {(!loading && data.most_traded && data.most_traded.length > 0) ? data.most_traded.map((stock, i) => (
             <StockCard key={i} stock={stock} isWatchlisted={watchlist.includes(stock.symbol)} />
           )) : (
@@ -528,8 +534,14 @@ export default function Explore() {
           <h2 className="text-lg font-bold text-white flex items-center gap-2">
             <BarChart2 className="w-5 h-5 text-amber-400" /> Volume Surge Alerts
           </h2>
+          <button 
+            onClick={() => setExpandedSection(prev => ({ ...prev, volume_surged: !prev.volume_surged }))}
+            className="flex items-center gap-1 text-[10px] font-black text-primary hover:text-white transition-colors uppercase tracking-[0.2em]"
+          >
+            {expandedSection.volume_surged ? 'See less' : 'See more'} <ChevronRight className={`w-3.5 h-3.5 transform transition-transform ${expandedSection.volume_surged ? 'rotate-90' : ''}`} />
+          </button>
         </div>
-        <div className="flex overflow-x-auto gap-4 pb-2 hide-scrollbar">
+        <div className={expandedSection.volume_surged ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 pb-2" : "flex overflow-x-auto gap-4 pb-2 hide-scrollbar"}>
           {(!loading && data.volume_surged && data.volume_surged.length > 0) ? data.volume_surged.map((stock, i) => (
             <StockCard key={i} stock={stock} isVolumeSurged isWatchlisted={watchlist.includes(stock.symbol)} />
           )) : (

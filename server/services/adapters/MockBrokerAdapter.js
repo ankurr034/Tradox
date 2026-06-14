@@ -16,7 +16,7 @@ export default class MockBrokerAdapter extends BaseBrokerAdapter {
     };
   }
 
-  async connect(payload) {
+  async connect(_payload) {
     // Return standard mock tokens
     const accessToken = `MOCK-AT-${Math.random().toString(36).substring(7).toUpperCase()}`;
     const refreshToken = `MOCK-RT-${Math.random().toString(36).substring(7).toUpperCase()}`;
@@ -40,7 +40,7 @@ export default class MockBrokerAdapter extends BaseBrokerAdapter {
     };
   }
 
-  async getProfile(accessToken) {
+  async getProfile(_accessToken) {
     return {
       id: 'mock_123',
       name: 'Mock User',
@@ -49,14 +49,14 @@ export default class MockBrokerAdapter extends BaseBrokerAdapter {
     };
   }
 
-  async getHoldings(accessToken) {
+  async getHoldings(_accessToken) {
     return [
       { symbol: 'RELIANCE', quantity: 50, averagePrice: 2400, currentPrice: 2450, pnl: 2500 },
       { symbol: 'INFY', quantity: 100, averagePrice: 1500, currentPrice: 1480, pnl: -2000 }
     ];
   }
 
-  async placeOrder(accessToken, orderConfig) {
+  async placeOrder(_accessToken, orderConfig) {
     return {
       orderId: `MOCK-ORD-${Math.random().toString(36).substring(7).toUpperCase()}`,
       status: 'COMPLETE',

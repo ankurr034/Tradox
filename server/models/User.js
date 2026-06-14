@@ -25,6 +25,7 @@ const UserSchema = new mongoose.Schema({
   auto_renew: { type: Boolean, default: true },
   referral_code: { type: String, default: null },
   coupons_used: [{ type: String }],
+  watchlist: [{ type: String }],
   paymentHistory: [{
     orderId: String,
     paymentId: String,

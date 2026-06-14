@@ -143,7 +143,7 @@ async function generateJsonWithGemini(prompt, fallbackJson) {
 
 // 1. Smart Money Flow
 router.get('/smartmoney/flow', async (req, res) => {
-  const { period } = req.query;
+  const { period: _period } = req.query;
   // Dynamic mocked response to avoid costly AI for pure historical aggregate data
   res.json({
     summary: { total_fii_net: 4520, total_dii_net: 3100, total_net: 7620, fii_trend: 'BULLISH', dii_trend: 'NEUTRAL' },

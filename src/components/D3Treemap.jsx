@@ -1,6 +1,10 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
 import * as d3 from 'd3';
 
+// ─── Dynamic Font Sizing Helpers ─────────────────────────────────────────
+const getTileWidth = (d) => d.x1 - d.x0;
+const getTileHeight = (d) => d.y1 - d.y0;
+
 function D3Treemap({ data, liveDelta }) {
   const containerRef = useRef(null);
   const [dimensions, setDimensions] = useState({ width: 0, height: 600 });
@@ -20,34 +24,31 @@ function D3Treemap({ data, liveDelta }) {
   }, []);
 
   // ─── Dynamic Font Sizing ─────────────────────────────────────────────────
-  const getTileWidth = (d) => d.x1 - d.x0;
-  const getTileHeight = (d) => d.y1 - d.y0;
-
-  const getSymbolFontSize = (d) => {
+  const getSymbolFontSize = useCallback((d) => {
     const w = getTileWidth(d);
     const h = getTileHeight(d);
     if (w < 35 || h < 25) return 0; // hide text for tiny tiles
     if (w < 60) return 8;
     if (w < 90) return 10;
     return 12;
-  };
+  }, []);
 
-  const getChangeFontSize = (d) => {
+  const getChangeFontSize = useCallback((d) => {
     const w = getTileWidth(d);
     const h = getTileHeight(d);
     if (w < 50 || h < 35) return 0;
     if (w < 70) return 7;
     if (w < 90) return 9;
     return 11;
-  };
+  }, []);
 
-  const getPriceFontSize = (d) => {
+  const getPriceFontSize = useCallback((d) => {
     const w = getTileWidth(d);
     const h = getTileHeight(d);
     if (w < 80 || h < 50) return 0;
     if (w < 100) return 8;
     return 9;
-  };
+  }, []);
 
   // ─── Debounced ResizeObserver ────────────────────────────────────────────
   useEffect(() => {
@@ -251,7 +252,7 @@ function D3Treemap({ data, liveDelta }) {
 
     dataCacheRef.current = data;
 
-  }, [data, dimensions.width, getFillColor]);
+  }, [data, dimensions.width, dimensions.height, getFillColor, getSymbolFontSize, getChangeFontSize, getPriceFontSize]);
 
   // ─── Handle Delta WebSocket Updates (Without re-rendering React or D3 layout) ──
   useEffect(() => {

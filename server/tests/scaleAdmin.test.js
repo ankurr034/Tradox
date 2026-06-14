@@ -24,7 +24,6 @@ vi.mock('../middleware/auth.js', () => ({
 describe('Scale Administration Router', () => {
   let mockReq;
   let mockRes;
-  let next;
   let scaleAdminRouter;
 
   beforeAll(async () => {
@@ -43,7 +42,6 @@ describe('Scale Administration Router', () => {
       status: vi.fn().mockReturnThis(),
       json: vi.fn()
     };
-    next = vi.fn();
     vi.clearAllMocks();
   });
 

@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Command, Zap, ArrowRight, TrendingUp, Wallet, Shield, User, Globe, Calculator, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { useToast } from './Toast';
 
 export default function CommandBar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +10,6 @@ export default function CommandBar() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { isLiveMode, toggleMode } = useUser();
   const navigate = useNavigate();
-  const toast = useToast();
   const inputRef = useRef(null);
 
   const actions = [
@@ -41,8 +39,10 @@ export default function CommandBar() {
 
   useEffect(() => {
     if (isOpen) {
-      setQuery('');
-      setSelectedIndex(0);
+      Promise.resolve().then(() => {
+        setQuery('');
+        setSelectedIndex(0);
+      });
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);

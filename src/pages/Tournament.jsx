@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Trophy, Medal, Crown, Flame, Target, Users, Clock, TrendingUp, ArrowUp, ArrowDown, Zap, Award, Star, ChevronRight, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { useUser } from '../context/UserContext';
@@ -26,7 +26,8 @@ export default function Tournament() {
       setTournament(tRes.data.tournament);
       setLeaderboard(lRes.data.leaderboard);
       setTotalParticipants(lRes.data.total_participants);
-    } catch (e) { console.error(e); }
+    } catch { // catch block without using variable
+    }
     finally { setLoading(false); }
   };
 
@@ -35,7 +36,7 @@ export default function Tournament() {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/tournament/join?user_id=${user?.id || 1}`);
       toast.success(res.data.message);
-    } catch (e) { toast.error('Failed to join'); }
+    } catch { toast.error('Failed to join'); }
     finally { setJoining(false); }
   };
 

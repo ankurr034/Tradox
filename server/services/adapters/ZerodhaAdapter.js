@@ -66,7 +66,7 @@ export default class ZerodhaAdapter extends BaseBrokerAdapter {
    * Zerodha does not use traditional refresh tokens (requires daily login).
    * For the sake of the normalized architecture, we mimic a refresh payload if valid.
    */
-  async refreshToken(refreshToken) {
+  async refreshToken(_refreshToken) {
     throw new Error('Zerodha does not support automatic session refresh. Daily login required.');
   }
 

@@ -13,11 +13,7 @@ export default function BillingTab() {
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState(false);
 
-  useEffect(() => {
-    fetchBillingData();
-  }, [user]);
-
-  const fetchBillingData = async () => {
+  const fetchBillingData = React.useCallback(async () => {
     if (!user) return;
     try {
       const res = await axios.get(`${API_BASE_URL}/api/premium/billing-history?user_id=${user.id}`);
@@ -27,7 +23,11 @@ export default function BillingTab() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchBillingData();
+  }, [fetchBillingData]);
 
   const handleCancel = async () => {
     if (!window.confirm("Are you sure you want to cancel your premium subscription? You will lose access to elite features at the end of your billing cycle.")) return;
@@ -39,7 +39,7 @@ export default function BillingTab() {
         toast.success(res.data.message);
         fetchBillingData();
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to cancel subscription');
     } finally {
       setProcessing(false);
@@ -54,7 +54,7 @@ export default function BillingTab() {
         toast.success(`Auto-renew is now ${res.data.auto_renew ? 'enabled' : 'disabled'}`);
         fetchBillingData();
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to toggle auto-renew');
     } finally {
       setProcessing(false);

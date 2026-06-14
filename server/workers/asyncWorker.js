@@ -145,7 +145,9 @@ async function start() {
     try {
       await mongoose.disconnect();
       log.info('MongoDB disconnected.');
-    } catch {}
+    } catch {
+      // ignore
+    }
     process.exit(0);
   };
 

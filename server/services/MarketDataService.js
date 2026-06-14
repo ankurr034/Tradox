@@ -185,6 +185,9 @@ class MarketDataService {
 
         this.priceCache.set(originalSymbol, priceData);
 
+        // Check active GTT triggers asynchronously
+        import('./TriggerService.js').then(m => m.default.checkTriggers(originalSymbol, currentPrice)).catch(() => {});
+
         // Populate Redis cache and pub/sub message list
         if (redisClient && isRedisReady) {
           redisClient.set(`market_price:${originalSymbol}`, JSON.stringify(priceData), { EX: 86400 }).catch(() => {});
@@ -222,7 +225,7 @@ class MarketDataService {
     this.pollingInterval = setInterval(() => {
       // During market hours: normal polling
       // Outside market hours: reduced polling (30s) to conserve API quota
-      const effectiveInterval = this.isMarketOpen() ? intervalMs : 30000;
+      const _effectiveInterval = this.isMarketOpen() ? intervalMs : 30000;
 
       // If we're in reduced mode and haven't waited enough, skip
       if (!this.isMarketOpen()) {
@@ -241,6 +244,7 @@ class MarketDataService {
   // ═══════════════════════════════════════════════════════════
   updatePriceFromPubSub(symbol, priceData) {
     this.priceCache.set(symbol, priceData);
+    import('./TriggerService.js').then(m => m.default.checkTriggers(symbol, priceData.price)).catch(() => {});
   }
 
   // ═══════════════════════════════════════════════════════════
@@ -256,7 +260,9 @@ class MarketDataService {
         if (val) {
           try {
             this.priceCache.set(symbol, JSON.parse(val));
-          } catch {}
+          } catch {
+            // ignore
+          }
         }
       }).catch(() => {});
     } else {

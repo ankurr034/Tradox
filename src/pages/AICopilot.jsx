@@ -15,12 +15,19 @@ const SUGGESTIONS = [
   { text: 'Compare TCS vs INFY', icon: <Sparkles size={14} /> },
 ];
 
+import DOMPurify from 'dompurify';
+
 function formatBody(body) {
+  if (!body || typeof body !== 'string') return '';
   // Simple markdown-like formatting 
-  return body
+  const formatted = body
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/\n/g, '<br/>');
+  return DOMPurify.sanitize(formatted, {
+    ALLOWED_TAGS: ['strong', 'em', 'p', 'br', 'ul', 'ol', 'li', 'pre', 'code'],
+    ALLOWED_ATTR: ['href']
+  });
 }
 
 export default function AICopilot() {
@@ -89,7 +96,7 @@ export default function AICopilot() {
         blockHash
       };
       setMessages(prev => [...prev, aiMsg]);
-    } catch (err) {
+    } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
         title: '⚠️ Error',

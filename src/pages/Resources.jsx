@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { FileText, Code2, AlertTriangle, Database, ShieldAlert, Sparkles, ChevronRight, Activity, Cpu } from 'lucide-react';
 
 const TABS = [
@@ -251,6 +251,3 @@ function PrivacyPolicyContent() {
     </div>
   );
 }
-
-// Helper: AnimatePresence needs this import or we can mock/inline it
-import { AnimatePresence } from 'framer-motion';

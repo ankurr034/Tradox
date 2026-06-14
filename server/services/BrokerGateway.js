@@ -3,6 +3,7 @@ import UpstoxAdapter from './adapters/UpstoxAdapter.js';
 import AngelOneAdapter from './adapters/AngelOneAdapter.js';
 import MockBrokerAdapter from './adapters/MockBrokerAdapter.js';
 import PaperTradingEngine from './PaperTradingEngine.js';
+import { CircuitBreaker } from '../utils/CircuitBreaker.js';
 
 /**
  * BrokerGateway
@@ -16,6 +17,14 @@ class BrokerGateway {
       'Upstox Pro': new UpstoxAdapter({}),
       'Groww': new MockBrokerAdapter({}),
       'Angel One': new AngelOneAdapter({})
+    };
+    
+    // Per-broker isolated circuit breakers
+    this.breakers = {
+      'Zerodha Kite': new CircuitBreaker('Zerodha Kite'),
+      'Upstox Pro': new CircuitBreaker('Upstox Pro'),
+      'Groww': new CircuitBreaker('Groww'),
+      'Angel One': new CircuitBreaker('Angel One')
     };
     
     // Default fallback adapter for unrecognized names
@@ -162,10 +171,23 @@ class BrokerGateway {
       throw new Error('BrokerGateway Safety: Duplicate order detected. Rejected to prevent multi-submission.');
     }
     
+    const breaker = this.breakers[brokerName] || this.breakers['Groww'];
     try {
       this.orderCache.add(idempotencyKey);
       const adapter = this.getAdapter(brokerName);
-      return await adapter.placeOrder(accessToken, orderConfig);
+
+      return await breaker.execute(
+        async () => await adapter.placeOrder(accessToken, orderConfig),
+        () => {
+          // Degraded sandbox fallback if broker is offline / circuit is open
+          return {
+            status: 'FILLED',
+            orderId: `DEGRADED_${orderConfig.symbol}_${orderConfig.action}`,
+            message: `${brokerName} API is offline (Circuit Breaker OPEN). Fulfilling in fallback simulation mode.`,
+            is_paper: true
+          };
+        }
+      );
     } catch (err) {
       console.error(`[BrokerGateway] Order placement failed on ${brokerName}:`, err.message);
       throw err;

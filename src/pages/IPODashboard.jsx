@@ -44,7 +44,7 @@ export default function IPODashboard() {
       });
       toast.success(res.data.message);
       setApplyModal(null);
-    } catch (e) { toast.error('Application failed'); }
+    } catch { toast.error('Application failed'); }
     finally { setApplying(false); }
   };
 

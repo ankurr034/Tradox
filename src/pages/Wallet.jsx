@@ -57,7 +57,7 @@ export default function Wallet() {
         fetchWallet();
         if (refreshUser) refreshUser();
         setAmount('');
-      } catch (e) {
+      } catch {
         // Fallback if backend is unavailable
         setBalance(prev => prev + val);
         setTransactions(prev => [{
@@ -89,7 +89,7 @@ export default function Wallet() {
         fetchWallet();
         if (refreshUser) refreshUser();
         setAmount('');
-      } catch (e) {
+      } catch {
         // Fallback if backend is unavailable
         setBalance(prev => prev - val);
         setTransactions(prev => [{
@@ -116,7 +116,7 @@ export default function Wallet() {
         await axios.post(`${API_BASE_URL}/api/wallet/reset?user_id=${user.id}`);
         toast.success("Demo account reset successfully!");
         fetchWallet();
-      } catch (e) {
+      } catch {
         toast.error("Account reset failed.");
       }
     }

@@ -65,14 +65,14 @@ vi.mock('../middleware/auth.js', () => ({
 describe('AI Risk Coach Router', () => {
   let mockReq;
   let mockRes;
-  let next;
   let riskCoachRouter;
 
   beforeAll(async () => {
     // Dynamic import guarantees process.env.GEMINI_API_KEY is defined when router evaluates
+    // Add 45s timeout to handle machine performance fluctuation during parallel builds
     const mod = await import('../routes/riskCoach.js');
     riskCoachRouter = mod.default;
-  });
+  }, 45000);
 
   beforeEach(() => {
     mockReq = {
@@ -86,7 +86,6 @@ describe('AI Risk Coach Router', () => {
       status: vi.fn().mockReturnThis(),
       json: vi.fn()
     };
-    next = vi.fn();
     vi.clearAllMocks();
   });
 

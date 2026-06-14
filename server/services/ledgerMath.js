@@ -1,7 +1,4 @@
-// ═══════════════════════════════════════════════════════════
-//  Pure ledger math — no I/O, no globals. Kept separate so the
-//  money-critical logic can be unit-tested in isolation.
-// ═══════════════════════════════════════════════════════════
+import Big from 'big.js';
 
 /**
  * Apply a slippage model to a base execution price.
@@ -12,9 +9,14 @@
  * @returns {{ fillPrice: number, slippageVal: number }}
  */
 export function applySlippage(basePrice, action, slippagePct) {
-  const slippageVal = basePrice * slippagePct;
-  const fillPrice = action === 'BUY' ? basePrice + slippageVal : basePrice - slippageVal;
-  return { fillPrice, slippageVal };
+  const base = new Big(basePrice);
+  const slippagePctBig = new Big(slippagePct);
+  const slippageVal = base.times(slippagePctBig);
+  const fillPrice = action === 'BUY' ? base.plus(slippageVal) : base.minus(slippageVal);
+  return { 
+    fillPrice: parseFloat(fillPrice.toFixed(4)), 
+    slippageVal: parseFloat(slippageVal.toFixed(4)) 
+  };
 }
 
 /**
@@ -27,16 +29,25 @@ export function applySlippage(basePrice, action, slippagePct) {
  */
 export function applyBuy(position, qty, fillPrice) {
   if (qty <= 0) throw new Error('Buy quantity must be positive');
-  const orderValue = fillPrice * qty;
-  const totalQty = position.quantity + qty;
-  const totalCost = position.quantity * position.averagePrice + orderValue;
+  const fillPriceBig = new Big(fillPrice);
+  const qtyBig = new Big(qty);
+  const orderValue = fillPriceBig.times(qtyBig);
+  
+  const currentQtyBig = new Big(position.quantity);
+  const currentAvgBig = new Big(position.averagePrice);
+  const currentCost = currentQtyBig.times(currentAvgBig);
+  
+  const totalQtyBig = currentQtyBig.plus(qtyBig);
+  const totalCost = currentCost.plus(orderValue);
+  const newAvgPrice = totalQtyBig.gt(0) ? totalCost.div(totalQtyBig) : new Big(0);
+
   return {
     position: {
-      quantity: totalQty,
-      averagePrice: totalCost / totalQty,
+      quantity: parseFloat(totalQtyBig.toFixed(4)),
+      averagePrice: parseFloat(newAvgPrice.toFixed(4)),
       realizedPnl: position.realizedPnl
     },
-    cashDelta: -orderValue
+    cashDelta: parseFloat(orderValue.times(-1).toFixed(4))
   };
 }
 
@@ -48,18 +59,22 @@ export function applyBuy(position, qty, fillPrice) {
 export function applySell(position, qty, fillPrice) {
   if (qty <= 0) throw new Error('Sell quantity must be positive');
   if (position.quantity < qty) throw new Error('Insufficient quantity — short selling not permitted');
-  const orderValue = fillPrice * qty;
-  const pnl = (fillPrice - position.averagePrice) * qty;
-  const remaining = position.quantity - qty;
+  const fillPriceBig = new Big(fillPrice);
+  const qtyBig = new Big(qty);
+  const orderValue = fillPriceBig.times(qtyBig);
+  
+  const currentAvgBig = new Big(position.averagePrice);
+  const pnl = fillPriceBig.minus(currentAvgBig).times(qtyBig);
+  const remaining = new Big(position.quantity).minus(qtyBig);
+
   return {
     position: {
-      quantity: remaining,
-      // Average price is meaningless once flat; keep last basis until re-entry.
-      averagePrice: remaining === 0 ? 0 : position.averagePrice,
-      realizedPnl: position.realizedPnl + pnl
+      quantity: parseFloat(remaining.toFixed(4)),
+      averagePrice: remaining.eq(0) ? 0 : position.averagePrice,
+      realizedPnl: parseFloat(new Big(position.realizedPnl).plus(pnl).toFixed(4))
     },
-    cashDelta: orderValue,
-    pnl
+    cashDelta: parseFloat(orderValue.toFixed(4)),
+    pnl: parseFloat(pnl.toFixed(4))
   };
 }
 

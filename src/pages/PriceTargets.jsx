@@ -6,7 +6,7 @@ import { API_BASE_URL } from '../config';
 
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
-  static getDerivedStateFromError(error) { return { hasError: true }; }
+  static getDerivedStateFromError(_error) { return { hasError: true }; }
   render() {
     if (this.state.hasError) {
       return <div className="p-8 text-center glass-panel border-rose-500/20"><AlertTriangle className="w-8 h-8 text-rose-400 mx-auto mb-4" /><h3 className="text-white font-bold mb-2">Targets Rendering Failed</h3><p className="text-zinc-500 text-sm">Failed to map AI insights to the dashboard. Please try refreshing.</p></div>;
@@ -18,15 +18,14 @@ class ErrorBoundary extends React.Component {
 const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
 
 export default function PriceTargets() {
-  const [symbol, setSymbol] = useState('RELIANCE');
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
   const [searchInput, setSearchInput] = useState('RELIANCE');
 
   const fetchTargets = (sym) => {
-    setLoading(true);
+    Promise.resolve().then(() => setLoading(true));
     axios.get(`${API_BASE_URL}/api/stock/targets/${sym}`)
-      .then(res => { setData(res.data); setSymbol(sym); })
+      .then(res => { setData(res.data); })
       .catch(() => {})
       .finally(() => setLoading(false));
   };

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
 import { Shield, AlertTriangle, TrendingDown, Zap, BarChart2, Activity, ChevronDown, ChevronUp, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import { useUser } from '../context/UserContext';
@@ -8,7 +8,7 @@ import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContaine
 
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
-  static getDerivedStateFromError(error) { return { hasError: true }; }
+  static getDerivedStateFromError(_error) { return { hasError: true }; }
   render() {
     if (this.state.hasError) {
       return <div className="p-8 text-center glass-panel border-rose-500/20"><AlertTriangle className="w-8 h-8 text-rose-400 mx-auto mb-4" /><h3 className="text-white font-bold mb-2">Simulation Rendering Failed</h3><p className="text-zinc-500 text-sm">Our AI engine encountered an unexpected data structure. Please try refreshing.</p></div>;

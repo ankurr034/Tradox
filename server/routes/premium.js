@@ -116,8 +116,8 @@ router.post('/verify', async (req, res) => {
 // Webhook Handler
 router.post('/webhook', express.raw({ type: 'application/json' }), async (req, res) => {
   try {
-    const signature = req.headers['x-razorpay-signature'];
-    const secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'mockwebhooksecret';
+    const _signature = req.headers['x-razorpay-signature'];
+    const _secret = process.env.RAZORPAY_WEBHOOK_SECRET || 'mockwebhooksecret';
     
     // In production, you would verify the raw body
     // const expectedSignature = crypto.createHmac('sha256', secret).update(req.rawBody).digest('hex');
@@ -196,7 +196,7 @@ router.post('/cancel', async (req, res) => {
     await user.save();
 
     res.json({ success: true, message: 'Subscription auto-renew disabled. Premium access will end at the end of the billing cycle.', expiry: user.premium_expiry });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -214,7 +214,7 @@ router.post('/toggle-autorenew', async (req, res) => {
     await user.save();
 
     res.json({ success: true, auto_renew: user.auto_renew });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Server error' });
   }
 });
@@ -236,7 +236,7 @@ router.get('/billing-history', async (req, res) => {
       auto_renew: user.auto_renew,
       history: user.paymentHistory.sort((a, b) => new Date(b.date) - new Date(a.date))
     });
-  } catch (error) {
+  } catch {
     res.status(500).json({ error: 'Server error' });
   }
 });

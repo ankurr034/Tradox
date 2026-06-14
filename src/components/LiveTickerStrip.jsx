@@ -1,10 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
 import useSocket from '../hooks/useSocket';
 import useMarketSession from '../hooks/useMarketSession';
 
 const ALLOWED_TICKERS = ['NIFTY 50', 'SENSEX', 'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK'];
+
+const TickerItem = React.memo(({ item }) => (
+  <div className="flex items-center gap-3 px-4 py-1 whitespace-nowrap group cursor-default">
+    <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white transition-colors tracking-wide">{item.symbol}</span>
+    <span className="text-[11px] font-mono-data font-semibold text-zinc-300">{item.value}</span>
+    <span className={`text-[11px] font-mono-data font-bold ${item.up ? 'text-success' : 'text-danger'}`}>
+      {item.change.startsWith('+') || item.change.startsWith('-') ? '' : (item.up ? '+' : '')}{item.change} ({item.pct.includes('%') ? item.pct : item.pct + '%'})
+    </span>
+  </div>
+));
 
 export default function LiveTickerStrip() {
   const session = useMarketSession(false);
@@ -24,20 +32,10 @@ export default function LiveTickerStrip() {
     if (socketUpdates && socketUpdates.length > 0) {
       const filtered = socketUpdates.filter(item => ALLOWED_TICKERS.includes(item.symbol));
       if (filtered.length > 0) {
-        setTickerData(filtered);
+        Promise.resolve().then(() => setTickerData(filtered));
       }
     }
   }, [socketUpdates]);
-
-  const TickerItem = ({ item }) => (
-    <div className="flex items-center gap-3 px-4 py-1 whitespace-nowrap group cursor-default">
-      <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white transition-colors tracking-wide">{item.symbol}</span>
-      <span className="text-[11px] font-mono-data font-semibold text-zinc-300">{item.value}</span>
-      <span className={`text-[11px] font-mono-data font-bold ${item.up ? 'text-success' : 'text-danger'}`}>
-        {item.change.startsWith('+') || item.change.startsWith('-') ? '' : (item.up ? '+' : '')}{item.change} ({item.pct.includes('%') ? item.pct : item.pct + '%'})
-      </span>
-    </div>
-  );
 
   return (
     <div className="w-full bg-[#0a0a0a] border-b border-white/[0.04] overflow-hidden relative flex items-center">

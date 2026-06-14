@@ -1,6 +1,14 @@
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence } from 'framer-motion';
+
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [pathname]);
+  return null;
+}
 import { ToastProvider } from './components/Toast';
 import { UserProvider, useUser } from './context/UserContext';
 import { Web3Provider } from './context/Web3Context';
@@ -157,6 +165,7 @@ function AnimatedRoutes() {
 function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <UserProvider>
         <ToastProvider>
           <Web3Provider>

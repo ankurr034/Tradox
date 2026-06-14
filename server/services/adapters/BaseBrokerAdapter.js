@@ -27,7 +27,7 @@ export default class BaseBrokerAdapter {
    * @param {Object} payload e.g. { authCode, requestToken, etc. }
    * @returns {Promise<{ access_token, refresh_token, expires_at }>}
    */
-  async connect(payload) {
+  async connect(_payload) {
     throw new Error('connect() not implemented');
   }
   
@@ -36,7 +36,7 @@ export default class BaseBrokerAdapter {
    * @param {string} refreshToken
    * @returns {Promise<{ access_token, refresh_token, expires_at }>}
    */
-  async refreshToken(refreshToken) {
+  async refreshToken(_refreshToken) {
     throw new Error('refreshToken() not implemented');
   }
 
@@ -45,7 +45,7 @@ export default class BaseBrokerAdapter {
    * @param {string} accessToken 
    * @returns {Promise<{ id, name, email, balances }>}
    */
-  async getProfile(accessToken) {
+  async getProfile(_accessToken) {
     throw new Error('getProfile() not implemented');
   }
 
@@ -54,7 +54,7 @@ export default class BaseBrokerAdapter {
    * @param {string} accessToken
    * @returns {Promise<Array<{ symbol, quantity, averagePrice, currentPrice, pnl }>>}
    */
-  async getHoldings(accessToken) {
+  async getHoldings(_accessToken) {
     throw new Error('getHoldings() not implemented');
   }
 
@@ -64,7 +64,7 @@ export default class BaseBrokerAdapter {
    * @param {Object} orderConfig { symbol, action, quantity, type, price }
    * @returns {Promise<{ orderId, status, message }>}
    */
-  async placeOrder(accessToken, orderConfig) {
+  async placeOrder(_accessToken, _orderConfig) {
     throw new Error('placeOrder() not implemented');
   }
 
@@ -74,7 +74,7 @@ export default class BaseBrokerAdapter {
    * @param {string} accessToken
    * @returns {Promise<{ wsUrl, payload }>}
    */
-  async getMarketFeedConfig(accessToken) {
+  async getMarketFeedConfig(_accessToken) {
     throw new Error('getMarketFeedConfig() not implemented');
   }
 }
