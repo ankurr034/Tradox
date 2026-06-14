@@ -6,6 +6,16 @@ import useMarketSession from '../hooks/useMarketSession';
 
 const ALLOWED_TICKERS = ['NIFTY 50', 'SENSEX', 'RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK'];
 
+const TickerItem = React.memo(({ item }) => (
+  <div className="flex items-center gap-3 px-4 py-1 whitespace-nowrap group cursor-default">
+    <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white transition-colors tracking-wide">{item.symbol}</span>
+    <span className="text-[11px] font-mono-data font-semibold text-zinc-300">{item.value}</span>
+    <span className={`text-[11px] font-mono-data font-bold ${item.up ? 'text-success' : 'text-danger'}`}>
+      {item.change.startsWith('+') || item.change.startsWith('-') ? '' : (item.up ? '+' : '')}{item.change} ({item.pct.includes('%') ? item.pct : item.pct + '%'})
+    </span>
+  </div>
+));
+
 export default function LiveTickerStrip() {
   const session = useMarketSession(false);
   const [tickerData, setTickerData] = useState([
@@ -28,16 +38,6 @@ export default function LiveTickerStrip() {
       }
     }
   }, [socketUpdates]);
-
-  const TickerItem = ({ item }) => (
-    <div className="flex items-center gap-3 px-4 py-1 whitespace-nowrap group cursor-default">
-      <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white transition-colors tracking-wide">{item.symbol}</span>
-      <span className="text-[11px] font-mono-data font-semibold text-zinc-300">{item.value}</span>
-      <span className={`text-[11px] font-mono-data font-bold ${item.up ? 'text-success' : 'text-danger'}`}>
-        {item.change.startsWith('+') || item.change.startsWith('-') ? '' : (item.up ? '+' : '')}{item.change} ({item.pct.includes('%') ? item.pct : item.pct + '%'})
-      </span>
-    </div>
-  );
 
   return (
     <div className="w-full bg-[#0a0a0a] border-b border-white/[0.04] overflow-hidden relative flex items-center">

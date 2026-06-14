@@ -317,18 +317,88 @@ router.get('/copytrading/traders', (req, res) => {
   res.json({
     success: true,
     traders: [
-      { id: 'T001', name: 'AlphaTrader Pro', avatar: null, win_rate: 72, total_return: 156.4, followers: 2450, risk_score: 'MODERATE', strategy: 'Momentum', aum: '₹4.2 Cr', max_drawdown: 12, trades_per_week: 8, badge: 'VERIFIED' },
-      { id: 'T002', name: 'ValueHunter', avatar: null, win_rate: 68, total_return: 89.2, followers: 1820, risk_score: 'LOW', strategy: 'Value Investing', aum: '₹2.8 Cr', max_drawdown: 8, trades_per_week: 3, badge: 'VERIFIED' },
-      { id: 'T003', name: 'SwingMaster', avatar: null, win_rate: 65, total_return: 124.8, followers: 3100, risk_score: 'HIGH', strategy: 'Swing Trading', aum: '₹6.1 Cr', max_drawdown: 18, trades_per_week: 12, badge: 'TOP PERFORMER' }
+      {
+        id: 'T001',
+        name: 'AlphaTrader Pro',
+        avatar_initial: 'A',
+        handle: '@alphatrader',
+        verified: true,
+        style: 'Momentum',
+        risk_level: 'HIGH',
+        total_return_ytd: 156.4,
+        bio: 'High momentum and aggressive setups on large-cap breakout stocks.',
+        win_rate: 72,
+        total_trades: 342,
+        followers: 2450,
+        max_drawdown: 12,
+        sharpe_ratio: 2.4,
+        consistency_score: 85,
+        avg_holding_days: 5,
+        monthly_returns: [12, -4, 8, 15, -2, 9, 11, -3, 14, 18, 5, 12],
+        top_stocks: ['RELIANCE', 'TCS', 'INFY'],
+        recent_trades: [
+          { type: 'BUY', symbol: 'RELIANCE', date: '2 hours ago', return_pct: 4.2 },
+          { type: 'SELL', symbol: 'TCS', date: '1 day ago', return_pct: -1.5 }
+        ]
+      },
+      {
+        id: 'T002',
+        name: 'ValueHunter',
+        avatar_initial: 'V',
+        handle: '@valuehunter',
+        verified: true,
+        style: 'Value',
+        risk_level: 'LOW',
+        total_return_ytd: 89.2,
+        bio: 'Fundamental valuation analysis targeting undervalued mid-caps.',
+        win_rate: 68,
+        total_trades: 184,
+        followers: 1820,
+        max_drawdown: 8,
+        sharpe_ratio: 1.8,
+        consistency_score: 92,
+        avg_holding_days: 45,
+        monthly_returns: [4, 5, 2, -1, 3, 6, 4, 2, 5, 8, 3, 6],
+        top_stocks: ['HDFCBANK', 'ICICIBANK', 'SBIN'],
+        recent_trades: [
+          { type: 'BUY', symbol: 'HDFCBANK', date: '3 days ago', return_pct: 12.4 },
+          { type: 'BUY', symbol: 'ICICIBANK', date: '5 days ago', return_pct: 8.5 }
+        ]
+      },
+      {
+        id: 'T003',
+        name: 'SwingMaster',
+        avatar_initial: 'S',
+        handle: '@swingmaster',
+        verified: false,
+        style: 'Swing Trading',
+        risk_level: 'MEDIUM',
+        total_return_ytd: 124.8,
+        bio: 'Capturing short-term trend reversals using mathematical indicators.',
+        win_rate: 65,
+        total_trades: 512,
+        followers: 3100,
+        max_drawdown: 18,
+        sharpe_ratio: 2.1,
+        consistency_score: 78,
+        avg_holding_days: 12,
+        monthly_returns: [8, -6, 12, 10, -5, 14, -8, 12, 15, -4, 18, 9],
+        top_stocks: ['TATAMOTORS', 'NTPC', 'POWERGRID'],
+        recent_trades: [
+          { type: 'SELL', symbol: 'TATAMOTORS', date: 'Yesterday', return_pct: 18.2 },
+          { type: 'BUY', symbol: 'POWERGRID', date: '2 days ago', return_pct: 3.1 }
+        ]
+      }
     ]
   });
 });
 
 router.post('/copytrading/follow', (req, res) => {
-  const { trader_id, allocation } = req.body;
+  const { trader_id, allocation, allocation_pct } = req.body;
+  const finalAllocation = allocation || allocation_pct || 10;
   res.json({
     success: true,
-    message: `Now following trader ${trader_id} with ₹${allocation || 50000} allocation`,
+    message: `Now following trader ${trader_id} with ${finalAllocation}% allocation`,
     follow_id: `FOLLOW_${Date.now()}`
   });
 });
@@ -337,26 +407,76 @@ router.post('/copytrading/follow', (req, res) => {
 //  Screener
 // ═══════════════════════════════════════════════════════════
 router.get('/screener/scan', (req, res) => {
-  const { filter } = req.query;
-  const stocks = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'TATAMOTORS', 'NTPC', 'POWERGRID'];
+  const { sector, minConfidence, search } = req.query;
   
-  const results = stocks.map((symbol, idx) => {
+  let symbols = Array.from(MarketDataService.priceCache.keys()).filter(sym => !sym.includes(' ') && !sym.includes('NIFTY') && !sym.includes('SENSEX'));
+  if (symbols.length === 0) {
+    symbols = ['RELIANCE', 'TCS', 'HDFCBANK', 'INFY', 'ICICIBANK', 'TATAMOTORS', 'NTPC', 'POWERGRID'];
+  }
+
+  const getSector = (symbol) => {
+    const financial = ['HDFCBANK', 'ICICIBANK', 'SBIN', 'AXISBANK', 'KOTAKBANK', 'BAJFINANCE'];
+    const it = ['TCS', 'INFY', 'WIPRO', 'HCLTECH', 'TECHM'];
+    const energy = ['RELIANCE', 'NTPC', 'POWERGRID', 'ONGC', 'BPCL'];
+    const fmcg = ['ITC', 'HINDUNILVR', 'NESTLEIND', 'BRITANNIA'];
+    const healthcare = ['SUNPHARMA', 'CIPLA', 'DRREDDY', 'APOLLOHOSP'];
+    const auto = ['TATAMOTORS', 'M&M', 'MARUTI', 'HEROMOTOCO'];
+    const metals = ['TATASTEEL', 'JSWSTEEL', 'HINDALCO', 'COALINDIA'];
+    
+    if (financial.includes(symbol)) return 'FINANCIALS';
+    if (it.includes(symbol)) return 'IT';
+    if (energy.includes(symbol)) return 'ENERGY';
+    if (fmcg.includes(symbol)) return 'FMCG';
+    if (healthcare.includes(symbol)) return 'HEALTHCARE';
+    if (auto.includes(symbol)) return 'AUTO';
+    if (metals.includes(symbol)) return 'METALS';
+    
+    const hash = symbol.charCodeAt(0) % 7;
+    const sectList = ['FINANCIALS', 'IT', 'ENERGY', 'FMCG', 'HEALTHCARE', 'AUTO', 'METALS'];
+    return sectList[hash];
+  };
+  
+  let results = symbols.map((symbol) => {
     const price = MarketDataService.getCurrentPrice(symbol);
     const changePct = MarketDataService.priceCache.get(symbol)?.changePercent || 0;
-    const hash = symbol.charCodeAt(0) + symbol.charCodeAt(1);
+    const hash = symbol.charCodeAt(0) + (symbol.charCodeAt(1) || 0);
+    const rsiVal = parseFloat((30 + (hash * 3 % 50)).toFixed(1));
+    const confidenceVal = Math.round(65 + (hash % 30));
+    
+    let signalVal = 'NEUTRAL';
+    if (changePct >= 1.5 && rsiVal < 70) signalVal = 'STRONG BUY';
+    else if (changePct >= 0) signalVal = 'BUY';
+    else if (changePct < -1.5) signalVal = 'SELL';
+
     return {
       symbol,
       price,
+      change: parseFloat(changePct.toFixed(2)),
       change_pct: parseFloat(changePct.toFixed(2)),
-      volume: 800000 + (hash * 37 % 2000000),
+      volume: (800000 + (hash * 37 % 2000000)).toLocaleString('en-IN'),
       pe_ratio: parseFloat((15 + (hash % 20)).toFixed(1)),
       market_cap: `₹${(price * 1000000 / 10000000).toFixed(0)} Cr`,
-      rsi: parseFloat((40 + (hash % 30)).toFixed(1)),
-      macd_signal: changePct >= 0 ? 'BULLISH' : 'BEARISH'
+      rsi: rsiVal,
+      macd_signal: changePct >= 0 ? 'BULLISH' : 'BEARISH',
+      signal: signalVal,
+      confidence: confidenceVal,
+      sector: getSector(symbol)
     };
   });
 
-  res.json({ success: true, results, total: results.length });
+  // Apply filters
+  if (sector && sector !== 'ALL') {
+    results = results.filter(s => s.sector.toUpperCase() === sector.toUpperCase());
+  }
+  if (minConfidence) {
+    results = results.filter(s => s.confidence >= parseInt(minConfidence));
+  }
+  if (search) {
+    const q = search.toUpperCase();
+    results = results.filter(s => s.symbol.toUpperCase().includes(q) || s.sector.toUpperCase().includes(q));
+  }
+
+  res.json({ success: true, stocks: results, total: results.length });
 });
 
 // ═══════════════════════════════════════════════════════════
@@ -549,8 +669,87 @@ router.get('/calculator/goal', (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════
-//  Helpers
+//  Stock Comparison Endpoint
 // ═══════════════════════════════════════════════════════════
+router.get('/compare', (req, res) => {
+  const symbolsQuery = req.query.symbols || 'TCS,INFY';
+  const symbols = symbolsQuery.split(',').map(s => s.trim().toUpperCase());
+
+  const mockStocks = symbols.map(symbol => {
+    const price = MarketDataService.getCurrentPrice(symbol);
+    const changePct = MarketDataService.priceCache.get(symbol)?.changePercent || 0.0;
+    const hash = symbol.charCodeAt(0) + (symbol.charCodeAt(1) || 0);
+
+    return {
+      symbol,
+      price,
+      change_pct: parseFloat(changePct.toFixed(2)),
+      scores: {
+        value: 50 + (hash % 45),
+        growth: 55 + (hash * 3 % 40),
+        sentiment: 60 + (hash % 35),
+        momentum: 45 + (hash * 2 % 50),
+        stability: 65 + (hash % 30)
+      },
+      returns: {
+        '1W': parseFloat((0.5 + (hash % 4)).toFixed(1)),
+        '1M': parseFloat((2.0 + (hash * 2 % 10)).toFixed(1)),
+        '3M': parseFloat((5.0 + (hash % 15)).toFixed(1)),
+        'YTD': parseFloat((10.0 + (hash * 3 % 20)).toFixed(1)),
+        '1Y': parseFloat((15.0 + (hash % 30)).toFixed(1))
+      },
+      market_cap: `₹${(1.5 + (hash % 15)).toFixed(1)} L Cr`,
+      pe_ratio: parseFloat((15 + (hash % 20)).toFixed(1)),
+      pb_ratio: parseFloat((2 + (hash % 10)).toFixed(1)),
+      roe: parseFloat((10 + (hash % 30)).toFixed(1)),
+      eps: parseFloat((20 + (hash * 2 % 100)).toFixed(1)),
+      dividend_yield: parseFloat((0.5 + (hash % 4)).toFixed(1)),
+      debt_equity: parseFloat((0.1 + (hash % 10) / 10).toFixed(2)),
+      beta: parseFloat((0.5 + (hash % 10) / 10).toFixed(2)),
+      '52w_high': parseFloat((price * 1.25).toFixed(1)),
+      '52w_low': parseFloat((price * 0.75).toFixed(1)),
+      revenue_growth: parseFloat((5 + (hash % 25)).toFixed(1)),
+      profit_growth: parseFloat((4 + (hash % 30)).toFixed(1))
+    };
+  });
+
+  const getWinner = (key, minimize = false) => {
+    if (mockStocks.length === 0) return '';
+    let bestSymbol = mockStocks[0].symbol;
+    let bestVal = mockStocks[0][key];
+    mockStocks.forEach(s => {
+      if (minimize) {
+        if (s[key] < bestVal) {
+          bestVal = s[key];
+          bestSymbol = s.symbol;
+        }
+      } else {
+        if (s[key] > bestVal) {
+          bestVal = s[key];
+          bestSymbol = s.symbol;
+        }
+      }
+    });
+    return bestSymbol;
+  };
+
+  const winners = {
+    pe_ratio: getWinner('pe_ratio', true),
+    roe: getWinner('roe'),
+    dividend_yield: getWinner('dividend_yield'),
+    beta: getWinner('beta', true)
+  };
+
+  const recommendation = `${symbols[0]} is showing strong fundamentals in this group with a competitive ROE and optimal momentum scores.`;
+
+  res.json({
+    success: true,
+    recommendation,
+    stocks: mockStocks,
+    winners
+  });
+});
+
 function getNextThursday() {
   const d = new Date();
   const day = d.getDay();

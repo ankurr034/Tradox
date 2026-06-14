@@ -162,6 +162,10 @@ export default function StockDetail() {
     }
     return () => abortController.abort();
   }, [activeTicker, user]);
+ 
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [tickerId]);
 
   const toggleWatchlist = async () => {
     if (!user) return;
@@ -354,7 +358,7 @@ export default function StockDetail() {
     setTimeRange('Custom');
   };
 
-  if (!user && !loading) {
+  if (!user) {
      return <div className="flex flex-col items-center justify-center py-20 text-center">
         <UserIcon className="w-16 h-16 text-zinc-700 mb-4" />
         <h2 className="text-2xl font-bold text-white mb-2">Login Required</h2>
@@ -401,11 +405,15 @@ export default function StockDetail() {
                  )}
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center">
-                    <span className="font-extrabold text-2xl text-gradient">{data.ticker.charAt(0)}</span>
+                    <span className="font-extrabold text-2xl text-gradient">
+                      {data?.ticker?.replace('.NS', '') === 'ZOMATO' ? 'E' : data?.ticker?.charAt(0)}
+                    </span>
                   </div>
                   <div>
                     <div className="flex items-center gap-3">
-                      <h1 className="text-3xl font-extrabold text-white leading-tight">{data.ticker.replace('.NS', '')}</h1>
+                      <h1 className="text-3xl font-extrabold text-white leading-tight">
+                        {data?.ticker?.replace('.NS', '') === 'ZOMATO' ? 'ETERNAL' : data?.ticker?.replace('.NS', '')}
+                      </h1>
                       <button 
                         onClick={toggleWatchlist}
                         className={`p-2 rounded-xl border transition-all ${inWatchlist ? 'bg-amber-500/10 border-amber-500/20 text-amber-400' : 'bg-white/[0.04] border-white/[0.06] text-zinc-600 hover:text-white'}`}
@@ -413,36 +421,14 @@ export default function StockDetail() {
                         <Star className={`w-5 h-5 ${inWatchlist ? 'fill-amber-400' : ''}`} />
                       </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                       <span className="text-[10px] font-bold px-2 py-0.5 bg-white/[0.04] rounded text-zinc-500 uppercase tracking-widest">{data.sector || 'Equities'}</span>
-                       <div className="flex bg-white/[0.03] p-1 rounded-lg border border-white/[0.06]">
-                          <button onClick={() => setChartType('Line')} className={`px-2 py-1 text-[9px] font-black uppercase rounded-md transition-all ${chartType === 'Line' ? 'bg-primary text-black' : 'text-zinc-500'}`}>Line</button>
-                          <button onClick={() => setChartType('Candle')} className={`px-2 py-1 text-[9px] font-black uppercase rounded-md transition-all ${chartType === 'Candle' ? 'bg-primary text-black' : 'text-zinc-500'}`}>Candle</button>
-                       </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 bg-white/[0.03] p-1.5 rounded-xl border border-white/[0.06] overflow-x-auto no-scrollbar max-w-full">
-                  {['1D', '1W', '1M', '3M', '1Y', '5Y', 'ALL'].map(range => (
-                    <button
-                      key={range}
-                      onClick={() => { setTimeRange(range); setDateRange({ start: '', end: '' }); }}
-                      className={`px-3 py-1.5 text-[10px] font-black rounded-lg transition-all shrink-0 ${timeRange === range ? 'bg-white/10 text-white shadow-lg' : 'text-zinc-500 hover:text-zinc-300'}`}
-                    >
-                      {range}
-                    </button>
-                  ))}
-                  <div className="w-px h-4 bg-white/10 mx-1" />
-                  <div className="flex items-center gap-2 pl-1">
-                    <input type="date" value={dateRange.start} onChange={(e) => handleDateChange('start', e.target.value)} className="bg-transparent border-none text-[10px] text-zinc-400 focus:outline-none w-24" />
-                    <span className="text-zinc-700 font-bold">→</span>
-                    <input type="date" value={dateRange.end} onChange={(e) => handleDateChange('end', e.target.value)} className="bg-transparent border-none text-[10px] text-zinc-400 focus:outline-none w-24" />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-4 flex items-end gap-4">
+                     <div className="flex items-center gap-2">
+                        <span className="text-[10px] font-bold px-2 py-0.5 bg-white/[0.04] rounded text-zinc-500 uppercase tracking-widest">{data.sector || 'Equities'}</span>
+                     </div>
+                   </div>
+                 </div>
+               </div>
+ 
+               <div className="mt-4 flex items-end gap-4">
                 <h2 className="text-4xl font-extrabold font-mono-data">₹{currentPrice.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</h2>
                 <p className={`text-lg font-bold flex items-center pb-1 font-mono-data ${isPositive ? 'text-emerald-400' : 'text-red-400'}`}>
                   {isPositive ? <ArrowUpRight className="w-5 h-5 mr-0.5" /> : <ArrowDownRight className="w-5 h-5 mr-0.5" />}

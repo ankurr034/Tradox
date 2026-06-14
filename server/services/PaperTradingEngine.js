@@ -3,6 +3,7 @@ import { PaperAccount, PaperPosition, PaperOrder, RiskEvent } from '../models/Pa
 import MarketSession from '../utils/MarketSession.js';
 import MarketDataService from './MarketDataService.js';
 import { applySlippage, applyBuy, applySell } from './ledgerMath.js';
+import Big from 'big.js';
 
 class PaperTradingEngine {
   constructor() {
@@ -107,23 +108,30 @@ class PaperTradingEngine {
     const slippagePct = (Math.random() * 0.001); // 0% to 0.1% slippage
     const { fillPrice: finalFillPrice, slippageVal } = applySlippage(executionPrice, orderConfig.action, slippagePct);
 
-    const orderValue = finalFillPrice * orderConfig.quantity;
+    const balanceBig = new Big(account.balance);
+    const finalFillPriceBig = new Big(finalFillPrice);
+    const qtyBig = new Big(orderConfig.quantity);
+    const orderValue = parseFloat(finalFillPriceBig.times(qtyBig).toFixed(4));
 
     // 3. Risk Engine Guards
-    if (orderConfig.action === 'BUY' && account.balance < orderValue) {
+    if (orderConfig.action === 'BUY' && balanceBig.lt(orderValue)) {
        this.triggerRiskEvent(userId, 'INSUFFICIENT_FUNDS', `Order value ₹${orderValue.toFixed(2)} exceeds balance ₹${account.balance.toFixed(2)}`);
        throw new Error(`PaperTrading Safety: Insufficient funds. Balance: ₹${account.balance.toFixed(2)}`);
     }
 
-    // Max Position Sizing (e.g., no single stock > 25% of initial 10L capital = 2.5L)
+    // Dynamic Max Position Sizing (e.g., no single stock > 25% of current portfolio balance)
     const positionKey = `${userId}_${orderConfig.symbol}`;
     const currentPos = this.positions.get(positionKey) || { quantity: 0, averagePrice: 0, realizedPnl: 0 };
 
     if (orderConfig.action === 'BUY') {
-       const newExposure = (currentPos.quantity + orderConfig.quantity) * finalFillPrice;
-       if (newExposure > 250000) {
-           this.triggerRiskEvent(userId, 'MAX_POSITION_SIZE_EXCEEDED', `Exposure ₹${newExposure.toFixed(2)} exceeds 25% limit.`);
-           throw new Error("PaperTrading Safety: Max position size (2.5L) exceeded.");
+       const currentQtyBig = new Big(currentPos.quantity);
+       const totalQtyBig = currentQtyBig.plus(qtyBig);
+       const newExposure = parseFloat(totalQtyBig.times(finalFillPriceBig).toFixed(4));
+       const maxAllowedExposure = parseFloat(balanceBig.times(0.25).toFixed(4));
+       
+       if (newExposure > maxAllowedExposure) {
+           this.triggerRiskEvent(userId, 'MAX_POSITION_SIZE_EXCEEDED', `Exposure ₹${newExposure.toFixed(2)} exceeds 25% dynamic limit of ₹${maxAllowedExposure.toFixed(2)}.`);
+           throw new Error(`PaperTrading Safety: Max position size (25% dynamic limit: ₹${maxAllowedExposure.toFixed(2)}) exceeded.`);
        }
     }
 

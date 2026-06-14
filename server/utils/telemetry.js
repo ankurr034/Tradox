@@ -1,4 +1,4 @@
-import Sentry from '@sentry/node';
+import * as Sentry from '@sentry/node';
 import client from 'prom-client';
 import crypto from 'crypto';
 import { SENTRY_DSN, isProd } from './secrets.js';

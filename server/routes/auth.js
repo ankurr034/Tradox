@@ -356,7 +356,7 @@ router.post('/google', async (req, res) => {
       const base = email.split('@')[0].replace(/[^a-z0-9_]/g, '') || 'user';
       let username = base;
       let suffix = 0;
-      // eslint-disable-next-line no-await-in-loop
+       
       while (await User.findOne({ username })) {
         suffix += 1;
         username = `${base}${suffix}`;

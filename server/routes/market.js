@@ -48,15 +48,26 @@ router.get('/explore', (req, res) => {
     top_picks: [
       formatStock('RELIANCE', 'Reliance Ind.'),
       formatStock('TCS', 'Tata Consultancy'),
-      formatStock('HDFCBANK', 'HDFC Bank')
+      formatStock('HDFCBANK', 'HDFC Bank'),
+      formatStock('INFY', 'Infosys Ltd.'),
+      formatStock('BHARTIARTL', 'Bharti Airtel'),
+      formatStock('SBIN', 'State Bank of India'),
+      formatStock('LTIM', 'LTIMindtree')
     ],
     most_traded: [
       formatStock('INFY', 'Infosys'),
-      formatStock('ICICIBANK', 'ICICI Bank')
+      formatStock('ICICIBANK', 'ICICI Bank'),
+      formatStock('RELIANCE', 'Reliance Ind.'),
+      formatStock('SBIN', 'State Bank of India'),
+      formatStock('HDFCBANK', 'HDFC Bank'),
+      formatStock('ITC', 'ITC Limited')
     ],
     volume_surged: [
       formatStock('TATAMOTORS', 'Tata Motors', '3x'),
-      formatStock('ZOMATO', 'Zomato Ltd', '5x')
+      formatStock('ZOMATO', 'Eternal', '5x'),
+      formatStock('BHARTIARTL', 'Bharti Airtel', '2x'),
+      formatStock('ITC', 'ITC Limited', '4x'),
+      formatStock('AXISBANK', 'Axis Bank', '3.5x')
     ],
     news: [
       { publisher: 'Reuters', title: 'Foreign inflows hit 6-month high in Indian equities', link: '#', ai_sentiment: 'BULLISH' },
@@ -80,15 +91,73 @@ router.get('/market/pulse', (req, res) => {
   res.json({ sentiment, trend, fear_greed: fearGreed, signal });
 });
 
-router.get('/watchlist', (req, res) => {
-  const symbols = ['RELIANCE', 'TCS', 'TATAMOTORS', 'HDFCBANK'];
-  res.json({ watchlist: symbols });
+router.get('/watchlist', async (req, res) => {
+  try {
+    const { user_id } = req.query;
+    if (!user_id || user_id === 'mock_web2_user' || user_id === 'nexus-sim-user') {
+      const defaultSymbols = ['RELIANCE', 'TCS', 'TATAMOTORS', 'HDFCBANK'];
+      return res.json({ watchlist: defaultSymbols });
+    }
+
+    const User = (await import('../models/User.js')).default;
+    const mongoose = (await import('mongoose')).default;
+    let query = mongoose.Types.ObjectId.isValid(user_id) ? { _id: user_id } : { walletAddress: user_id.toLowerCase() };
+    const user = await User.findOne(query);
+    if (!user) {
+      return res.json({ watchlist: ['RELIANCE', 'TCS', 'TATAMOTORS', 'HDFCBANK'] });
+    }
+    
+    // Fallback to default if user watchlist is empty
+    const list = user.watchlist && user.watchlist.length > 0 
+      ? user.watchlist 
+      : ['RELIANCE', 'TCS', 'TATAMOTORS', 'HDFCBANK'];
+
+    res.json({ watchlist: list });
+  } catch (e) {
+    res.status(500).json({ detail: e.message });
+  }
+});
+
+router.post('/watchlist/toggle', async (req, res) => {
+  try {
+    const { user_id, symbol } = req.query;
+    if (!user_id) return res.status(400).json({ detail: 'User ID required' });
+    if (!symbol) return res.status(400).json({ detail: 'Symbol required' });
+
+    const cleanSymbol = symbol.toUpperCase().replace('.NS', '');
+
+    if (user_id === 'mock_web2_user' || user_id === 'nexus-sim-user') {
+      return res.json({ status: 'success', action: 'added' });
+    }
+
+    const User = (await import('../models/User.js')).default;
+    const mongoose = (await import('mongoose')).default;
+    let query = mongoose.Types.ObjectId.isValid(user_id) ? { _id: user_id } : { walletAddress: user_id.toLowerCase() };
+    const user = await User.findOne(query);
+    if (!user) return res.status(404).json({ detail: 'User not found' });
+
+    if (!user.watchlist) user.watchlist = [];
+    
+    const index = user.watchlist.indexOf(cleanSymbol);
+    let action = 'added';
+    if (index > -1) {
+      user.watchlist.splice(index, 1);
+      action = 'removed';
+    } else {
+      user.watchlist.push(cleanSymbol);
+    }
+
+    await user.save();
+    res.json({ status: 'success', action });
+  } catch (e) {
+    res.status(500).json({ detail: e.message });
+  }
 });
 
 router.get('/theme/:themeName', (req, res) => {
   const themes = {
     'High Dividend Yield': [['NTPC', 'NTPC Ltd'], ['POWERGRID', 'Power Grid'], ['COALINDIA', 'Coal India']],
-    'Undervalued Momentum': [['TATAMOTORS', 'Tata Motors'], ['ZOMATO', 'Zomato Ltd'], ['TATAPOWER', 'Tata Power']],
+    'Undervalued Momentum': [['TATAMOTORS', 'Tata Motors'], ['ZOMATO', 'Eternal'], ['TATAPOWER', 'Tata Power']],
     'AI & NextGen Tech': [['INFY', 'Infosys'], ['TCS', 'TCS Ltd'], ['WIPRO', 'Wipro']],
     'Green Energy': [['TATAPOWER', 'Tata Power'], ['NTPC', 'NTPC Ltd'], ['POWERGRID', 'Power Grid']],
     'PSU Monopolies': [['NTPC', 'NTPC Ltd'], ['POWERGRID', 'Power Grid'], ['COALINDIA', 'Coal India']]

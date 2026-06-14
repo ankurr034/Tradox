@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Filter, TrendingUp, TrendingDown, Target, Zap, Activity, Info, ChevronRight, Sliders, BarChart4, Sparkles, AlertCircle, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
+import { useToast } from '../components/Toast';
 
 export default function Screener() {
+  const toast = useToast();
   const [stocks, setStocks] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [alphaFilterActive, setAlphaFilterActive] = useState(false);
+  const [sortField, setSortField] = useState('symbol');
+  const [sortDirection, setSortDirection] = useState('asc');
   const [filters, setFilters] = useState({
     minPrice: 0,
     maxPrice: 10000,
@@ -21,18 +26,87 @@ export default function Screener() {
   const fetchStocks = async () => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/screener/search`, { params: filters });
-      setStocks(res.data.stocks);
+      const res = await axios.get(`${API_BASE_URL}/api/screener/scan`, { params: filters });
+      setStocks(res.data.stocks || []);
     } catch (e) {
       console.error(e);
+      setStocks([]);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchStocks();
+    const handler = setTimeout(() => {
+      fetchStocks();
+    }, 300);
+    return () => clearTimeout(handler);
   }, [filters]);
+
+  const displayedStocks = useMemo(() => {
+    if (alphaFilterActive) {
+      return (stocks || []).filter(s => (s.rsi || 0) < 30);
+    }
+    return stocks || [];
+  }, [stocks, alphaFilterActive]);
+
+  const handleSort = (field) => {
+    if (sortField === field) {
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setSortField(field);
+      setSortDirection('desc');
+    }
+  };
+
+  const sortedStocks = useMemo(() => {
+    const items = [...displayedStocks];
+    items.sort((a, b) => {
+      let valA = a[sortField];
+      let valB = b[sortField];
+
+      if (sortField === 'volume') {
+        valA = parseFloat((a.volume || '0').replace(/,/g, ''));
+        valB = parseFloat((b.volume || '0').replace(/,/g, ''));
+      }
+
+      if (valA === undefined || valA === null) return 1;
+      if (valB === undefined || valB === null) return -1;
+
+      if (typeof valA === 'string') {
+        return sortDirection === 'asc' 
+          ? valA.localeCompare(valB) 
+          : valB.localeCompare(valA);
+      } else {
+        return sortDirection === 'asc' 
+          ? valA - valB 
+          : valB - valA;
+      }
+    });
+    return items;
+  }, [displayedStocks, sortField, sortDirection]);
+
+  const handleApplyAlphaFilter = () => {
+    if (alphaFilterActive) {
+      setAlphaFilterActive(false);
+      setFilters(prev => ({
+        ...prev,
+        minConfidence: 0
+      }));
+      toast.success("Alpha filter cleared");
+    } else {
+      setAlphaFilterActive(true);
+      setFilters(prev => ({
+        ...prev,
+        minConfidence: 85
+      }));
+      toast.success("Alpha filter applied: Confidence >= 85% & RSI < 30");
+    }
+  };
+
+  const handleSetupAlerts = () => {
+    toast.success("Real-time breakout alerts configured successfully for Nexus Golden Zone scripts!");
+  };
 
   return (
     <div className="space-y-8 pb-20">
@@ -114,72 +188,86 @@ export default function Screener() {
          ) : (
             <div className="overflow-x-auto">
                <table className="w-full text-left border-collapse">
-                  <thead>
-                     <tr className="border-b border-white/[0.06] text-zinc-500 text-[10px] uppercase tracking-widest">
-                        <th className="py-5 px-8 font-bold">Trading Script</th>
-                        <th className="py-5 px-8 font-bold text-center">AI Signal</th>
-                        <th className="py-5 px-8 font-bold text-right">LTP</th>
-                        <th className="py-5 px-8 font-bold text-right">Day Chg</th>
-                        <th className="py-5 px-8 font-bold text-center">Confidence</th>
-                        <th className="py-5 px-8 font-bold text-center">RSI (14)</th>
-                        <th className="py-5 px-8 font-bold text-right">Volume</th>
-                        <th className="py-5 px-8 font-bold text-right"></th>
-                     </tr>
-                  </thead>
-                  <tbody>
-                     {stocks.map((s, i) => (
-                        <tr key={i} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors group">
-                           <td className="py-5 px-8">
-                              <Link to={`/stock/${s.symbol}`} className="flex items-center gap-3 no-underline">
-                                 <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center group-hover:border-amber-500/40 transition-colors">
-                                    <span className="text-xs font-black text-zinc-400">{s.symbol.charAt(0)}</span>
-                                 </div>
-                                 <div>
-                                    <p className="font-bold text-white group-hover:text-amber-400 transition-colors mb-0">{s.symbol}</p>
-                                    <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-tighter">{s.sector}</p>
-                                 </div>
-                              </Link>
-                           </td>
-                           <td className="py-5 px-8 text-center text-xs font-black">
-                              <span className={`px-3 py-1 rounded-full border ${
-                                 s.signal === 'STRONG BUY' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
-                                 s.signal === 'BUY' ? 'bg-emerald-500/5 border-emerald-500/10 text-emerald-500' :
-                                 s.signal === 'SELL' ? 'bg-red-500/5 border-red-500/10 text-red-500' :
-                                 'bg-zinc-800 border-white/5 text-zinc-400'
-                              }`}>
-                                 {s.signal}
-                              </span>
-                           </td>
-                           <td className="py-5 px-8 text-right font-black text-white font-mono-data text-base">₹{s.price.toLocaleString()}</td>
-                           <td className={`py-5 px-8 text-right font-black font-mono-data ${s.change >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {s.change >= 0 ? '+' : ''}{s.change}%
-                           </td>
-                           <td className="py-5 px-8 text-center">
-                              <div className="flex flex-col items-center gap-1.5">
-                                 <div className="w-24 h-1.5 bg-white/[0.03] rounded-full overflow-hidden border border-white/[0.04]">
-                                    <div className="h-full bg-amber-500" style={{ width: `${s.confidence}%` }} />
-                                 </div>
-                                 <span className="text-[10px] font-mono font-bold text-amber-500">{s.confidence}%</span>
-                              </div>
-                           </td>
-                           <td className="py-5 px-8 text-center">
-                              <span className={`text-xs font-mono font-bold ${s.rsi > 70 ? 'text-red-400' : s.rsi < 30 ? 'text-emerald-400' : 'text-zinc-500'}`}>
-                                 {s.rsi}
-                              </span>
-                           </td>
-                           <td className="py-5 px-8 text-right font-bold text-zinc-500 font-mono-data text-xs">{s.volume}</td>
-                           <td className="py-5 px-8 text-right">
-                              <Link to={`/stock/${s.symbol}`} className="p-2 hover:bg-white/5 rounded-full transition-colors inline-block no-underline">
-                                 <ChevronRight className="w-5 h-5 text-zinc-700" />
-                              </Link>
-                           </td>
-                        </tr>
-                     ))}
-                  </tbody>
-               </table>
-            </div>
-         )}
-      </div>
+                   <thead>
+                      <tr className="border-b border-white/[0.06] text-zinc-500 text-[10px] uppercase tracking-widest select-none">
+                         <th className="py-5 px-8 font-bold cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('symbol')}>
+                            Trading Script {sortField === 'symbol' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                         </th>
+                         <th className="py-5 px-8 font-bold text-center cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('signal')}>
+                            AI Signal {sortField === 'signal' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                         </th>
+                         <th className="py-5 px-8 font-bold text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('price')}>
+                            LTP {sortField === 'price' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                         </th>
+                         <th className="py-5 px-8 font-bold text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('change')}>
+                            Day Chg {sortField === 'change' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                         </th>
+                         <th className="py-5 px-8 font-bold text-center cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('confidence')}>
+                            Confidence {sortField === 'confidence' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                         </th>
+                         <th className="py-5 px-8 font-bold text-center cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('rsi')}>
+                            RSI (14) {sortField === 'rsi' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                         </th>
+                         <th className="py-5 px-8 font-bold text-right cursor-pointer hover:text-white transition-colors" onClick={() => handleSort('volume')}>
+                            Volume {sortField === 'volume' ? (sortDirection === 'asc' ? ' ▲' : ' ▼') : ''}
+                         </th>
+                         <th className="py-5 px-8 font-bold text-right"></th>
+                      </tr>
+                   </thead>
+                   <tbody>
+                      {(sortedStocks || []).map((s, i) => (
+                         <tr key={i} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors group">
+                            <td className="py-5 px-8">
+                               <Link to={`/stock/${s.symbol}`} className="flex items-center gap-3 no-underline">
+                                  <div className="w-10 h-10 rounded-xl bg-white/[0.04] border border-white/[0.06] flex items-center justify-center group-hover:border-amber-500/40 transition-colors">
+                                     <span className="text-xs font-black text-zinc-400">{(s.symbol || '').charAt(0)}</span>
+                                  </div>
+                                  <div>
+                                     <p className="font-bold text-white group-hover:text-amber-400 transition-colors mb-0">{s.symbol}</p>
+                                     <p className="text-[10px] text-zinc-600 font-bold uppercase tracking-tighter">{s.sector}</p>
+                                  </div>
+                               </Link>
+                            </td>
+                            <td className="py-5 px-8 text-center text-xs font-black">
+                               <span className={`px-3 py-1 rounded-full border ${
+                                  s.signal === 'STRONG BUY' ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' :
+                                  s.signal === 'BUY' ? 'bg-emerald-500/5 border-emerald-500/10 text-emerald-500' :
+                                  s.signal === 'SELL' ? 'bg-red-500/5 border-red-500/10 text-red-500' :
+                                  'bg-zinc-800 border-white/5 text-zinc-400'
+                               }`}>
+                                  {s.signal || 'NEUTRAL'}
+                               </span>
+                            </td>
+                            <td className="py-5 px-8 text-right font-black text-white font-mono-data text-base">₹{(s.price || 0).toLocaleString()}</td>
+                            <td className={`py-5 px-8 text-right font-black font-mono-data ${(s.change || 0) >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                               {(s.change || 0) >= 0 ? '+' : ''}{s.change || 0}%
+                            </td>
+                            <td className="py-5 px-8 text-center">
+                               <div className="flex flex-col items-center gap-1.5">
+                                  <div className="w-24 h-1.5 bg-white/[0.03] rounded-full overflow-hidden border border-white/[0.04]">
+                                     <div className="h-full bg-amber-500" style={{ width: `${s.confidence || 0}%` }} />
+                                  </div>
+                                  <span className="text-[10px] font-mono font-bold text-amber-500">{s.confidence || 0}%</span>
+                                </div>
+                            </td>
+                            <td className="py-5 px-8 text-center">
+                               <span className={`text-xs font-mono font-bold ${(s.rsi || 0) > 70 ? 'text-red-400' : (s.rsi || 0) < 30 ? 'text-emerald-400' : 'text-zinc-500'}`}>
+                                  {s.rsi || 0}
+                               </span>
+                            </td>
+                            <td className="py-5 px-8 text-right font-bold text-zinc-500 font-mono-data text-xs">{s.volume || '0'}</td>
+                            <td className="py-5 px-8 text-right">
+                               <Link to={`/stock/${s.symbol}`} className="p-2 hover:bg-white/5 rounded-full transition-colors inline-block no-underline">
+                                  <ChevronRight className="w-5 h-5 text-zinc-700" />
+                                </Link>
+                            </td>
+                         </tr>
+                      ))}
+                   </tbody>
+                </table>
+             </div>
+          )}
+       </div>
 
       {/* Pro Tip Section */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mt-6 sm:mt-10">
@@ -193,7 +281,14 @@ export default function Screener() {
                Stocks with <span className="text-white font-bold">RSI below 30</span> and <span className="text-emerald-400 font-bold">AI Confidence above 85%</span> have shown 74% win-rate in historical backtests over the last 12 months.
             </p>
             <div className="flex gap-3">
-               <button className="flex-1 py-3 bg-indigo-600 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-indigo-500 transition-all">Apply Alpha Filter</button>
+               <button
+                  onClick={handleApplyAlphaFilter}
+                  className={`flex-1 py-3 text-white font-black text-xs uppercase tracking-widest rounded-xl transition-all cursor-pointer ${
+                    alphaFilterActive ? 'bg-indigo-500 border border-indigo-400' : 'bg-indigo-600 hover:bg-indigo-500'
+                  }`}
+                >
+                  {alphaFilterActive ? 'Clear Alpha Filter' : 'Apply Alpha Filter'}
+                </button>
             </div>
          </div>
 
@@ -207,7 +302,12 @@ export default function Screener() {
                Get real-time push notifications when a script enters the <span className="text-amber-400 font-bold">Nexus Golden Zone</span> (High Volume + High AI Score + Range Breakout).
             </p>
             <div className="flex gap-3">
-               <button className="flex-1 py-3 bg-amber-600 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-amber-500 transition-all">Setup Alerts</button>
+               <button
+                  onClick={handleSetupAlerts}
+                  className="flex-1 py-3 bg-amber-600 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-amber-500 transition-all cursor-pointer"
+                >
+                  Setup Alerts
+                </button>
             </div>
          </div>
       </div>

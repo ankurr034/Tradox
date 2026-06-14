@@ -115,33 +115,85 @@ router.post('/cancel', async (req, res) => {
 });
 
 // ═══════════════════════════════════════════════════════════
-//  POST /api/gtt/cancel — Cancel a GTT (Good Till Triggered) order
+//  POST /api/gtt/create — Create a new GTT trigger
+// ═══════════════════════════════════════════════════════════
+router.post('/gtt/create', async (req, res) => {
+  try {
+    const { userId, symbol, triggerPrice, triggerType, action, quantity } = req.body;
+    const activeUser = req.query.user_id || req.body.user_id || userId;
+    
+    if (!activeUser || !symbol || !triggerPrice || !quantity) {
+      return res.status(400).json({ detail: 'Missing required parameters' });
+    }
+
+    const TriggerService = (await import('../services/TriggerService.js')).default;
+    const trigger = await TriggerService.addTrigger({
+      userId: activeUser,
+      symbol,
+      triggerPrice,
+      triggerType: triggerType || 'GTT',
+      action,
+      quantity
+    });
+
+    res.json({ success: true, trigger_id: trigger._id, message: 'GTT trigger created' });
+  } catch (err) {
+    res.status(500).json({ detail: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  GET /api/gtt/list — Retrieve user GTT triggers
+// ═══════════════════════════════════════════════════════════
+router.get('/gtt/list', async (req, res) => {
+  try {
+    const { user_id } = req.query;
+    if (!user_id) return res.status(400).json({ detail: 'user_id required' });
+
+    const Trigger = (await import('../models/Trigger.js')).default;
+    const list = await Trigger.find({ userId: user_id }).sort({ createdAt: -1 }).lean();
+
+    const formatted = list.map(t => ({
+      order_id: t._id.toString(),
+      symbol: t.symbol,
+      transaction_type: t.action,
+      trigger_type: t.triggerType,
+      trigger_price: t.triggerPrice,
+      quantity: t.quantity,
+      status: t.status === 'PENDING' ? 'ACTIVE' : t.status,
+      expiry_date: new Date(t.createdAt.getTime() + 365 * 24 * 60 * 60 * 1000).toLocaleDateString()
+    }));
+
+    res.json({ success: true, gtt_orders: formatted });
+  } catch (err) {
+    res.status(500).json({ detail: err.message });
+  }
+});
+
+// ═══════════════════════════════════════════════════════════
+//  POST /api/gtt/cancel — Cancel a GTT trigger
 // ═══════════════════════════════════════════════════════════
 router.post('/gtt/cancel', async (req, res) => {
   try {
     const { order_id, user_id } = req.body;
     if (!order_id) return res.status(400).json({ detail: 'order_id required' });
+    const activeUser = req.query.user_id || req.body.user_id || user_id;
 
-    // GTT orders are stored as PENDING orders with a trigger price
-    const order = await PaperOrder.findOne({ orderId: order_id, status: 'PENDING' });
-    if (!order) return res.status(404).json({ detail: 'GTT order not found or already triggered' });
-
-    if (user_id && order.userId !== user_id) {
-      writeAuditLog(user_id, 'GTT_CANCELLED', 'FAILURE', { reason: 'Unauthorized access', orderId: order_id }, req);
-      return res.status(403).json({ detail: 'Unauthorized' });
-    }
-
-    order.status = 'CANCELED';
-    order.rejectReason = 'GTT cancelled by user';
-    await order.save();
-
-    writeAuditLog(order.userId, 'GTT_CANCELLED', 'SUCCESS', { orderId: order_id, symbol: order.symbol }, req);
+    const TriggerService = (await import('../services/TriggerService.js')).default;
+    await TriggerService.cancelTrigger(order_id, activeUser);
 
     res.json({ success: true, message: `GTT order ${order_id} cancelled` });
   } catch (err) {
-    console.error('[ORDERS] GTT cancel error:', err.message);
-    writeAuditLog(req.body.user_id, 'GTT_CANCELLED', 'FAILURE', { error: err.message, orderId: req.body.order_id }, req);
-    res.status(500).json({ detail: 'Failed to cancel GTT order' });
+    try {
+      const order = await PaperOrder.findOne({ orderId: order_id, status: 'PENDING' });
+      if (!order) return res.status(404).json({ detail: 'GTT order not found' });
+      order.status = 'CANCELED';
+      order.rejectReason = 'GTT cancelled by user';
+      await order.save();
+      return res.json({ success: true, message: `GTT order ${order_id} cancelled` });
+    } catch (fallbackErr) {
+      res.status(500).json({ detail: err.message });
+    }
   }
 });
 

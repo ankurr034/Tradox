@@ -24,6 +24,9 @@ export default function Navbar() {
   const profileRef = useRef(null);
   const notificationRef = useRef(null);
 
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef(null);
+
   const [notifications, setNotifications] = useState([]);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
@@ -67,6 +70,7 @@ export default function Navbar() {
   useEffect(() => {
     setMobileOpen(false);
     setProfileOpen(false);
+    setMenuOpen(false);
   }, [location.pathname]);
 
   useEffect(() => {
@@ -76,6 +80,9 @@ export default function Navbar() {
       }
       if (notificationRef.current && !notificationRef.current.contains(event.target)) {
         setNotificationsOpen(false);
+      }
+      if (menuRef.current && !menuRef.current.contains(event.target)) {
+        setMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -104,6 +111,53 @@ export default function Navbar() {
     }
     setSwitchingMode(false);
   };
+
+  const primaryLinks = useMemo(() => [
+    { path: '/', label: 'Explore' },
+    { path: '/portfolio', label: 'Holdings' },
+    { path: '/orders', label: 'Orders' },
+    { path: '/heatmap', label: 'Heatmap' },
+    { path: '/screener', label: 'Screener' },
+    { path: '/copilot', label: '🤖 AI Copilot' },
+    { path: '/risk-coach', label: '🛡️ Risk Coach' },
+  ], []);
+
+  const menuGroups = useMemo(() => ({
+    aiIntel: [
+      { path: '/copilot', label: '🤖 AI Copilot' },
+      { path: '/risk-coach', label: '🛡️ Risk Coach' },
+      { path: '/trading-dna', label: '🧬 My DNA' },
+      { path: '/microstructure', label: '🔬 Microstructure' },
+      { path: '/sentiment', label: '📡 Sentiment' },
+      { path: '/xray', label: '🧬 X-Ray' },
+      { path: '/stress-test', label: '🛡️ Stress Test' },
+      { path: '/smart-money', label: '💰 Smart Money' },
+    ],
+    advTrading: [
+      { path: '/simulator', label: '⚡ Simulator' },
+      { path: '/price-targets', label: '🎯 Targets' },
+      { path: '/options-builder', label: '🎯 Options' },
+      { path: '/copy-trading', label: '👥 Copy Trade' },
+      { path: '/heatmap', label: 'Heatmap' },
+      { path: '/baskets', label: 'Baskets' },
+      { path: '/tournament', label: '🏆 Arena' },
+      { path: '/ipo', label: '🚀 IPO' },
+      { path: '/earnings', label: '📅 Earnings' },
+    ],
+    portfolioMarkets: [
+      { path: '/', label: 'Explore' },
+      { path: '/portfolio', label: 'Holdings' },
+      { path: '/orders', label: 'Orders' },
+      { path: '/screener', label: 'Screener' },
+      { path: '/compare', label: 'Compare' },
+      { path: '/alerts', label: '🔔 Alerts' },
+      { path: '/fno', label: 'F&O' },
+      { path: '/mutual-funds', label: 'MF' },
+      { path: '/sip-calculator', label: 'SIP' },
+      { path: '/rewards', label: '⭐ Rewards' },
+      { path: '/wallet', label: 'Wallet' },
+    ]
+  }), []);
 
   const navLinks = useMemo(() => [
     { path: '/', label: 'Explore' },
@@ -350,27 +404,124 @@ export default function Navbar() {
           </div>
 
           {/* Nav Tabs - Desktop (hidden on mobile, shown from lg+) */}
-          <div className="hidden lg:flex gap-0.5 xl:gap-1 -mb-px overflow-x-auto no-scrollbar pb-1 hide-scrollbar">
-            {navLinks.map(link => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`relative px-2.5 xl:px-4 py-2.5 xl:py-3 text-xs xl:text-sm font-semibold transition-colors rounded-t-lg whitespace-nowrap shrink-0
-                  ${isActive(link.path)
-                    ? 'text-primary'
-                    : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.02]'
-                  }`}
+          <div className="hidden lg:flex items-center justify-between gap-1 -mb-px pb-1 relative">
+            <div className="flex gap-0.5 xl:gap-1 overflow-x-auto no-scrollbar hide-scrollbar">
+              {primaryLinks.map(link => (
+                <Link
+                  key={link.path}
+                  to={link.path}
+                  className={`relative px-2.5 xl:px-4 py-2.5 xl:py-3 text-xs xl:text-sm font-semibold transition-colors rounded-t-lg whitespace-nowrap shrink-0 no-underline
+                    ${isActive(link.path)
+                      ? 'text-primary'
+                      : 'text-zinc-500 hover:text-zinc-200 hover:bg-white/[0.02]'
+                    }`}
+                >
+                  {link.label}
+                  {isActive(link.path) && (
+                    <motion.div
+                      layoutId="activeTab"
+                      className="absolute bottom-0 left-2 right-2 h-[2px] bg-primary rounded-full"
+                      transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                    />
+                  )}
+                </Link>
+              ))}
+            </div>
+
+            {/* "Three lines" menu for all options */}
+            <div className="relative z-50 mb-1" ref={menuRef}>
+              <button
+                onClick={() => setMenuOpen(!menuOpen)}
+                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold uppercase tracking-wider rounded-xl transition-all duration-200 border cursor-pointer ${
+                  menuOpen
+                    ? 'bg-primary/20 text-primary border-primary/30 shadow-[0_0_15px_rgba(0,212,170,0.15)]'
+                    : 'bg-white/5 text-zinc-400 border-white/10 hover:bg-white/10 hover:text-zinc-300'
+                }`}
               >
-                {link.label}
-                {isActive(link.path) && (
+                <Menu className="w-4 h-4" />
+                <span>More</span>
+              </button>
+
+              <AnimatePresence>
+                {menuOpen && (
                   <motion.div
-                    layoutId="activeTab"
-                    className="absolute bottom-0 left-2 right-2 h-[2px] bg-primary rounded-full"
-                    transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-                  />
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-[680px] bg-[#0a0a0f]/98 backdrop-blur-2xl border border-white/[0.08] rounded-2xl shadow-2xl p-6 overflow-hidden grid grid-cols-3 gap-6 text-left"
+                  >
+                    {/* Column 1: AI & Intel */}
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-primary/85 border-b border-white/[0.04] pb-2">
+                        AI & Intelligence
+                      </h4>
+                      <div className="flex flex-col gap-1">
+                        {menuGroups.aiIntel.map(link => (
+                          <Link
+                            key={link.path}
+                            to={link.path}
+                            onClick={() => setMenuOpen(false)}
+                            className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 no-underline ${
+                              isActive(link.path)
+                                ? 'bg-primary/10 text-primary font-bold'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            {link.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Column 2: Advanced Trading */}
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-secondary border-b border-white/[0.04] pb-2">
+                        Advanced Trading
+                      </h4>
+                      <div className="flex flex-col gap-1">
+                        {menuGroups.advTrading.map(link => (
+                          <Link
+                            key={link.path}
+                            to={link.path}
+                            onClick={() => setMenuOpen(false)}
+                            className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 no-underline ${
+                              isActive(link.path)
+                                ? 'bg-secondary/10 text-secondary font-bold'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            {link.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Column 3: Portfolio & Markets */}
+                    <div className="space-y-4">
+                      <h4 className="text-[10px] font-black uppercase tracking-widest text-zinc-300 border-b border-white/[0.04] pb-2">
+                        Portfolio & Markets
+                      </h4>
+                      <div className="flex flex-col gap-1">
+                        {menuGroups.portfolioMarkets.map(link => (
+                          <Link
+                            key={link.path}
+                            to={link.path}
+                            onClick={() => setMenuOpen(false)}
+                            className={`px-3 py-2 rounded-lg text-xs font-semibold transition-all duration-150 no-underline ${
+                              isActive(link.path)
+                                ? 'bg-white/10 text-white font-bold'
+                                : 'text-zinc-400 hover:text-white hover:bg-white/[0.04]'
+                            }`}
+                          >
+                            {link.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
+                  </motion.div>
                 )}
-              </Link>
-            ))}
+              </AnimatePresence>
+            </div>
           </div>
         </div>
 

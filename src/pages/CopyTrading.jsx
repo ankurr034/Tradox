@@ -186,9 +186,9 @@ export default function CopyTrading() {
                 {/* Monthly Returns Mini Chart */}
                 <div className="h-12 mb-4">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={trader.monthly_returns.map((r, mi) => ({ month: mi, return: r }))}>
+                    <BarChart data={(trader.monthly_returns || []).map((r, mi) => ({ month: mi, return: r }))}>
                       <Bar dataKey="return" radius={[2, 2, 0, 0]}>
-                        {trader.monthly_returns.map((r, mi) => (
+                        {(trader.monthly_returns || []).map((r, mi) => (
                           <Cell key={mi} fill={r >= 0 ? '#10b98140' : '#ef444440'} />
                         ))}
                       </Bar>
@@ -199,7 +199,7 @@ export default function CopyTrading() {
                 {/* Top Stocks & Recent Trades */}
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex gap-1">
-                    {trader.top_stocks.map((s, si) => (
+                    {(trader.top_stocks || []).map((s, si) => (
                       <span key={si} className="text-[9px] font-bold px-2 py-0.5 rounded bg-white/[0.04] text-zinc-500">{s}</span>
                     ))}
                   </div>
@@ -210,7 +210,7 @@ export default function CopyTrading() {
 
                 {/* Recent Trades */}
                 <div className="space-y-1 mb-4">
-                  {trader.recent_trades.map((trade, ti) => (
+                  {(trader.recent_trades || []).map((trade, ti) => (
                     <div key={ti} className="flex items-center gap-3 text-xs py-1.5 px-2 rounded-lg bg-white/[0.01]">
                       <span className={`text-[9px] font-black px-1.5 py-0.5 rounded ${
                         trade.type === 'BUY' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-rose-500/10 text-rose-400'
@@ -245,10 +245,10 @@ export default function CopyTrading() {
                     <div className="p-6 bg-white/[0.01]">
                       <h4 className="text-xs font-black text-zinc-500 uppercase tracking-[0.2em] mb-3">12-Month Performance</h4>
                       <ResponsiveContainer width="100%" height={150}>
-                        <AreaChart data={trader.monthly_returns.map((r, mi) => ({
+                        <AreaChart data={(trader.monthly_returns || []).map((r, mi) => ({
                           month: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][mi],
                           return: r,
-                          cumulative: trader.monthly_returns.slice(0, mi + 1).reduce((a, b) => a + b, 0),
+                          cumulative: (trader.monthly_returns || []).slice(0, mi + 1).reduce((a, b) => a + b, 0),
                         }))}>
                           <defs>
                             <linearGradient id={`copyGrad${trader.id}`} x1="0" y1="0" x2="0" y2="1">

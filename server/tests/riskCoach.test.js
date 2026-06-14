@@ -70,9 +70,10 @@ describe('AI Risk Coach Router', () => {
 
   beforeAll(async () => {
     // Dynamic import guarantees process.env.GEMINI_API_KEY is defined when router evaluates
+    // Add 45s timeout to handle machine performance fluctuation during parallel builds
     const mod = await import('../routes/riskCoach.js');
     riskCoachRouter = mod.default;
-  });
+  }, 45000);
 
   beforeEach(() => {
     mockReq = {

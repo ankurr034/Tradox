@@ -185,6 +185,9 @@ class MarketDataService {
 
         this.priceCache.set(originalSymbol, priceData);
 
+        // Check active GTT triggers asynchronously
+        import('./TriggerService.js').then(m => m.default.checkTriggers(originalSymbol, currentPrice)).catch(() => {});
+
         // Populate Redis cache and pub/sub message list
         if (redisClient && isRedisReady) {
           redisClient.set(`market_price:${originalSymbol}`, JSON.stringify(priceData), { EX: 86400 }).catch(() => {});
@@ -241,6 +244,7 @@ class MarketDataService {
   // ═══════════════════════════════════════════════════════════
   updatePriceFromPubSub(symbol, priceData) {
     this.priceCache.set(symbol, priceData);
+    import('./TriggerService.js').then(m => m.default.checkTriggers(symbol, priceData.price)).catch(() => {});
   }
 
   // ═══════════════════════════════════════════════════════════

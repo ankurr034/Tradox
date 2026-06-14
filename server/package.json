@@ -14,6 +14,7 @@
     "@google/generative-ai": "^0.21.0",
     "@sentry/node": "^10.57.0",
     "bcryptjs": "^2.4.3",
+    "big.js": "^7.0.1",
     "bullmq": "^5.78.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
