@@ -240,10 +240,32 @@ router.get('/mutual-funds', (req, res) => {
     funds: [
       { name: 'Axis Bluechip Fund', category: 'Equity', nav: 48.52, aum: '32,450 Cr', returns_1y: 18.5, returns_3y: 14.2, returns_5y: 16.8, risk: 'Moderate', rating: 5, min_sip: 500 },
       { name: 'SBI Small Cap Fund', category: 'Equity', nav: 125.80, aum: '18,200 Cr', returns_1y: 28.4, returns_3y: 22.1, returns_5y: 24.5, risk: 'High', rating: 4, min_sip: 500 },
+      { name: 'Parag Parikh Flexi Cap Fund', category: 'Equity', nav: 62.40, aum: '35,100 Cr', returns_1y: 24.2, returns_3y: 19.5, returns_5y: 21.8, risk: 'Moderate', rating: 5, min_sip: 1000 },
+      { name: 'Nippon India Small Cap Fund', category: 'Equity', nav: 114.70, aum: '37,300 Cr', returns_1y: 34.5, returns_3y: 28.2, returns_5y: 26.4, risk: 'High', rating: 5, min_sip: 100 },
+      { name: 'SBI Bluechip Fund', category: 'Equity', nav: 70.15, aum: '38,900 Cr', returns_1y: 16.8, returns_3y: 13.5, returns_5y: 15.2, risk: 'Moderate', rating: 4, min_sip: 500 },
+      { name: 'HDFC Mid-Cap Opportunities Fund', category: 'Equity', nav: 156.40, aum: '60,200 Cr', returns_1y: 28.1, returns_3y: 24.2, returns_5y: 22.5, risk: 'High', rating: 5, min_sip: 100 },
+      { name: 'ICICI Prudential Bluechip Fund', category: 'Equity', nav: 92.15, aum: '45,800 Cr', returns_1y: 19.2, returns_3y: 15.6, returns_5y: 16.9, risk: 'Moderate', rating: 4, min_sip: 100 },
+      { name: 'Quant Active Fund', category: 'Equity', nav: 540.20, aum: '9,800 Cr', returns_1y: 35.8, returns_3y: 29.4, returns_5y: 28.1, risk: 'Very High', rating: 5, min_sip: 1000 },
+      { name: 'Tata Digital India Fund', category: 'Equity', nav: 45.60, aum: '8,200 Cr', returns_1y: 22.8, returns_3y: 16.5, returns_5y: 20.4, risk: 'High', rating: 4, min_sip: 150 },
       { name: 'HDFC Corporate Bond Fund', category: 'Debt', nav: 28.15, aum: '25,600 Cr', returns_1y: 7.2, returns_3y: 6.8, returns_5y: 7.5, risk: 'Low', rating: 5, min_sip: 1000 },
+      { name: 'Kotak Low Duration Fund', category: 'Debt', nav: 2450.40, aum: '10,120 Cr', returns_1y: 6.8, returns_3y: 5.9, returns_5y: 6.4, risk: 'Low', rating: 4, min_sip: 1000 },
+      { name: 'ICICI Prudential Savings Fund', category: 'Debt', nav: 452.10, aum: '22,400 Cr', returns_1y: 7.5, returns_3y: 6.2, returns_5y: 6.9, risk: 'Low', rating: 4, min_sip: 500 },
+      { name: 'Aditya Birla Sun Life Liquid Fund', category: 'Debt', nav: 375.40, aum: '31,200 Cr', returns_1y: 7.1, returns_3y: 5.8, returns_5y: 6.1, risk: 'Low', rating: 4, min_sip: 500 },
+      { name: 'Nippon India Arbitrage Fund', category: 'Debt', nav: 32.40, aum: '15,100 Cr', returns_1y: 7.8, returns_3y: 6.4, returns_5y: 5.9, risk: 'Low', rating: 4, min_sip: 100 },
       { name: 'UTI Nifty 50 Index Fund', category: 'Index', nav: 145.20, aum: '12,800 Cr', returns_1y: 15.2, returns_3y: 12.8, returns_5y: 14.1, risk: 'Moderate', rating: 4, min_sip: 500 },
+      { name: 'HDFC Index S&P BSE Sensex Fund', category: 'Index', nav: 620.30, aum: '8,400 Cr', returns_1y: 15.1, returns_3y: 12.6, returns_5y: 13.9, risk: 'Moderate', rating: 5, min_sip: 500 },
+      { name: 'Motilal Oswal Nasdaq 100 FOF', category: 'Index', nav: 24.80, aum: '4,100 Cr', returns_1y: 22.4, returns_3y: 15.8, returns_5y: 18.2, risk: 'High', rating: 4, min_sip: 500 },
+      { name: 'ICICI Prudential Nifty 50 Index Fund', category: 'Index', nav: 215.30, aum: '7,900 Cr', returns_1y: 15.3, returns_3y: 12.9, returns_5y: 14.2, risk: 'Moderate', rating: 4, min_sip: 100 },
+      { name: 'Navi Nifty 50 Index Fund', category: 'Index', nav: 18.20, aum: '1,500 Cr', returns_1y: 15.4, returns_3y: 13.0, returns_5y: 14.3, risk: 'Moderate', rating: 5, min_sip: 10 },
+      { name: 'Tata Nifty 50 Index Fund', category: 'Index', nav: 124.50, aum: '3,200 Cr', returns_1y: 15.2, returns_3y: 12.8, returns_5y: 14.1, risk: 'Moderate', rating: 4, min_sip: 150 },
       { name: 'Mirae Asset Tax Saver', category: 'ELSS', nav: 38.90, aum: '15,400 Cr', returns_1y: 22.1, returns_3y: 18.5, returns_5y: 20.2, risk: 'Moderate', rating: 5, min_sip: 500 },
-      { name: 'ICICI Prudential Balanced Advantage', category: 'Hybrid', nav: 56.45, aum: '48,200 Cr', returns_1y: 12.8, returns_3y: 11.5, returns_5y: 13.2, risk: 'Low', rating: 4, min_sip: 100 }
+      { name: 'DSP Tax Saver Fund', category: 'ELSS', nav: 84.10, aum: '11,200 Cr', returns_1y: 20.4, returns_3y: 17.2, returns_5y: 19.1, risk: 'Moderate', rating: 4, min_sip: 500 },
+      { name: 'Quant Tax Plan', category: 'ELSS', nav: 310.80, aum: '5,600 Cr', returns_1y: 32.5, returns_3y: 27.2, returns_5y: 26.8, risk: 'Very High', rating: 5, min_sip: 500 },
+      { name: 'Bandhan Tax Saver Fund', category: 'ELSS', nav: 112.40, aum: '4,100 Cr', returns_1y: 21.6, returns_3y: 17.8, returns_5y: 18.9, risk: 'Moderate', rating: 4, min_sip: 500 },
+      { name: 'ICICI Prudential Balanced Advantage', category: 'Hybrid', nav: 56.45, aum: '48,200 Cr', returns_1y: 12.8, returns_3y: 11.5, returns_5y: 13.2, risk: 'Low', rating: 4, min_sip: 100 },
+      { name: 'HDFC Balanced Advantage Fund', category: 'Hybrid', nav: 320.10, aum: '52,400 Cr', returns_1y: 18.2, returns_3y: 15.4, returns_5y: 16.5, risk: 'Moderate', rating: 5, min_sip: 100 },
+      { name: 'SBI Equity Hybrid Fund', category: 'Hybrid', nav: 245.10, aum: '62,100 Cr', returns_1y: 16.5, returns_3y: 14.1, returns_5y: 15.2, risk: 'Moderate', rating: 4, min_sip: 500 },
+      { name: 'Kotak Balanced Advantage Fund', category: 'Hybrid', nav: 18.90, aum: '15,800 Cr', returns_1y: 13.5, returns_3y: 12.1, returns_5y: 13.4, risk: 'Moderate', rating: 4, min_sip: 100 }
     ]
   });
 });
