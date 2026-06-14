@@ -10,7 +10,8 @@ const CATEGORIES = [
   { id: 'Equity', label: 'High Return (Equity)' },
   { id: 'Debt', label: 'Low Risk (Debt)' },
   { id: 'Hybrid', label: 'Balanced (Hybrid)' },
-  { id: 'Index', label: 'Low Cost (Index)' }
+  { id: 'Index', label: 'Low Cost (Index)' },
+  { id: 'ELSS', label: 'Tax Saver (ELSS)' }
 ];
 
 export default function MutualFunds() {
@@ -31,7 +32,15 @@ export default function MutualFunds() {
     const fetchFunds = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/api/mutual-funds`);
-        setFunds(res.data.funds || []);
+        const mapped = (res.data.funds || []).map(fund => ({
+          ...fund,
+          returns1Y: fund.returns_1y != null ? `${fund.returns_1y}%` : 'N/A',
+          returns3Y: fund.returns_3y != null ? `${fund.returns_3y}%` : 'N/A',
+          returns5Y: fund.returns_5y != null ? `${fund.returns_5y}%` : 'N/A',
+          minSip: fund.min_sip || 500,
+          color: fund.category === 'Equity' ? '#10b981' : fund.category === 'Debt' ? '#3b82f6' : fund.category === 'Hybrid' ? '#f59e0b' : '#8b5cf6'
+        }));
+        setFunds(mapped);
       } catch (e) {
         console.error("Failed to fetch mutual funds", e);
       } finally {
