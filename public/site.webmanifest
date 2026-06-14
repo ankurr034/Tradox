@@ -1,0 +1,17 @@
+{
+  "name": "NexusAI",
+  "short_name": "NexusAI",
+  "description": "India's Most Intelligent AI-Powered Stock Trading Platform.",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "48x48 72x72 96x96 128x128 256x256 512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0a0b",
+  "theme_color": "#0a0a0b"
+}
