@@ -1,9 +1,10 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Search, Bell, User, Activity, Menu, X, ChevronDown, Link as LinkIcon, LogOut, Shield, ShieldAlert, Wallet as WalletIcon, Zap } from 'lucide-react';
+import { Search, Bell, User, Activity, Menu, X, ChevronDown, Link as LinkIcon, LogOut, Shield, ShieldAlert, Wallet as WalletIcon, Zap, Sun, Moon } from 'lucide-react';
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import axios from 'axios';
 import { useUser } from '../context/UserContext';
+import { useTheme } from '../context/ThemeContext';
 import { useToast } from './Toast';
 import { API_BASE_URL } from '../config';
 import { getDisplayName, getAvatarInitials } from '../utils/identity';
@@ -12,6 +13,7 @@ export default function Navbar() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user, profile, isLiveMode, toggleMode, logout } = useUser();
+  const { theme, toggleTheme } = useTheme();
   const toast = useToast();
   
   const [search, setSearch] = useState('');
@@ -203,14 +205,16 @@ export default function Navbar() {
           <div className="flex justify-between items-center h-14 sm:h-16">
             
             {/* Logo */}
-            <Link to="/" className="flex items-center gap-1.5 sm:gap-2.5 group shrink-0">
-              <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg group-hover:shadow-primary/20 transition-shadow">
-                <img src="/favicon.png" className="w-5 h-5 sm:w-6 sm:h-6 object-contain" alt="NexusAI Logo" />
-              </div>
-              <div className="flex items-baseline gap-1 sm:gap-1.5">
-                <span className="text-lg sm:text-xl font-extrabold tracking-tight text-white">Nexus</span>
-                <span className="text-lg sm:text-xl font-extrabold tracking-tight text-gradient">AI</span>
-              </div>
+            <Link to="/" className="flex items-center group shrink-0 no-underline">
+              <svg viewBox="0 0 500 110" className="h-9 sm:h-10 w-auto" xmlns="http://www.w3.org/2000/svg">
+                <rect x="12" y="22" width="54" height="11" rx="2" fill="#E53E3E"/>
+                <rect x="31" y="22" width="11" height="40" rx="2" fill="#E53E3E"/>
+                <rect x="74" y="20" width="11" height="56" rx="2" fill="#E53E3E" transform="rotate(45 79 48)"/>
+                <rect x="74" y="20" width="11" height="56" rx="2" fill="#E53E3E" transform="rotate(-45 79 48)"/>
+                <polygon points="79,28 88,46 79,41 70,46" fill="#fff" opacity="0.9"/>
+                <text x="108" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="38" font-weight="900" fill="#FFFFFF" letter-spacing="3">TRADOX</text>
+                <text x="109" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#888888" letter-spacing="3">TRADE · GROW · DOMINATE</text>
+              </svg>
             </Link>
 
             {/* Search Bar - Desktop */}
@@ -255,6 +259,18 @@ export default function Navbar() {
                   <div className="absolute inset-0 bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity" />
                 </button>
               )}
+
+              <button
+                onClick={toggleTheme}
+                className="p-2.5 text-zinc-500 hover:text-white hover:bg-white/[0.04] rounded-xl transition-all mr-1"
+                aria-label="Toggle theme"
+              >
+                {theme === 'light' ? (
+                  <Moon className="w-[18px] h-[18px]" />
+                ) : (
+                  <Sun className="w-[18px] h-[18px]" />
+                )}
+              </button>
 
               <div className="relative" ref={notificationRef}>
                 <button 
@@ -552,6 +568,24 @@ export default function Navbar() {
                   className="w-full bg-white/[0.04] border border-white/[0.06] rounded-xl py-3 pl-10 pr-4 text-sm text-white focus:outline-none"
                 />
               </form>
+
+              {/* Theme toggle for mobile */}
+              <button
+                onClick={toggleTheme}
+                className="w-full flex items-center justify-center gap-2 px-4 py-3 border border-white/[0.06] bg-white/[0.04] text-zinc-300 hover:text-white rounded-xl mb-3 transition-all"
+              >
+                {theme === 'light' ? (
+                  <>
+                    <Moon className="w-4 h-4 text-zinc-400" />
+                    <span className="text-xs font-semibold">Switch to Dark Mode</span>
+                  </>
+                ) : (
+                  <>
+                    <Sun className="w-4 h-4 text-zinc-400" />
+                    <span className="text-xs font-semibold">Switch to Light Mode</span>
+                  </>
+                )}
+              </button>
 
               {/* Mode toggle for mobile */}
               {user && (

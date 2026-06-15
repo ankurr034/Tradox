@@ -158,11 +158,11 @@ export default function Explore() {
                 Good {new Date().getHours() < 12 ? 'Morning' : new Date().getHours() < 17 ? 'Afternoon' : 'Evening'}, <span className="text-gradient">Alpha Trader</span>
               </h1>
               <p className="text-zinc-500 text-sm sm:text-base lg:text-lg max-w-xl leading-relaxed mb-5 sm:mb-8">
-                Your Nexus AI engine has analyzed <span className="text-white font-bold">14,200+ data points</span>. The market is showing strong signs of <span className="text-emerald-400 font-bold uppercase tracking-wider">Sector Rotation</span> in Energy.
+                Your Tradox AI engine has analyzed <span className="text-white font-bold">14,200+ data points</span>. The market is showing strong signs of <span className="text-emerald-400 font-bold uppercase tracking-wider">Sector Rotation</span> in Energy.
               </p>
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 w-full sm:w-auto">
                  <Link to="/portfolio" className="px-5 sm:px-8 py-3 sm:py-3.5 bg-primary text-black font-black uppercase tracking-widest rounded-xl sm:rounded-2xl hover:bg-emerald-400 transition-all hover:scale-[1.02] shadow-lg shadow-primary/20 no-underline text-center text-sm">Analyze Portfolio</Link>
-                 <Link to="/screener" className="px-5 sm:px-8 py-3 sm:py-3.5 bg-white/[0.04] border border-white/[0.08] text-white font-black uppercase tracking-widest rounded-xl sm:rounded-2xl hover:bg-white/[0.08] transition-all no-underline text-center text-sm">Nexus Screener</Link>
+                 <Link to="/screener" className="px-5 sm:px-8 py-3 sm:py-3.5 bg-white/[0.04] border border-white/[0.08] text-white font-black uppercase tracking-widest rounded-xl sm:rounded-2xl hover:bg-white/[0.08] transition-all no-underline text-center text-sm">Tradox Screener</Link>
               </div>
             </div>
 
@@ -327,11 +327,11 @@ export default function Explore() {
         </motion.section>
       )}
 
-      {/* ─── NEXUS HEATMAP ─── */}
+      {/* ─── TRADOX HEATMAP ─── */}
       <motion.section variants={fadeUp}>
         <div className="flex justify-between items-center mb-5">
            <h2 className="text-lg font-bold text-white flex items-center gap-2">
-              <Sparkles className="w-5 h-5 text-emerald-400" /> Nexus Market Heatmap
+              <Sparkles className="w-5 h-5 text-emerald-400" /> Tradox Market Heatmap
            </h2>
            <span className="text-[10px] text-zinc-600 font-bold uppercase tracking-widest">Live Constituents</span>
         </div>

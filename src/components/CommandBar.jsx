@@ -139,9 +139,9 @@ export default function CommandBar() {
             <div className="bg-white/[0.02] px-6 py-3 border-t border-white/[0.08] flex items-center justify-between">
                <div className="flex items-center gap-4 text-[10px] font-black text-zinc-600 uppercase tracking-widest">
                   <span className="flex items-center gap-1.5"><Command size={12} /> Search Alpha</span>
-                  <span className="flex items-center gap-1.5"><Zap size={12} /> AI Nexus</span>
+                  <span className="flex items-center gap-1.5"><Zap size={12} /> AI Tradox</span>
                </div>
-               <p className="text-[9px] font-bold text-zinc-700 italic">Nexus AI v2.4.0 • Enterprise Core</p>
+               <p className="text-[9px] font-bold text-zinc-700 italic">Tradox v2.4.0 • Enterprise Core</p>
             </div>
           </motion.div>
         </div>

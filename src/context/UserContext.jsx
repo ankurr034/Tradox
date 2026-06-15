@@ -11,13 +11,13 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isLiveMode, setIsLiveMode] = useState(localStorage.getItem('nexus_is_live') === 'true');
+  const [isLiveMode, setIsLiveMode] = useState(localStorage.getItem('tradox_is_live') === 'true');
   const [brokerConnected, setBrokerConnected] = useState(false);
 
   const logout = useCallback(() => {
-    localStorage.removeItem('nexus_user_id');
-    localStorage.removeItem('nexus_jwt');
-    localStorage.removeItem('nexus_is_live');
+    localStorage.removeItem('tradox_user_id');
+    localStorage.removeItem('tradox_jwt');
+    localStorage.removeItem('tradox_is_live');
     localStorage.removeItem('broker_access_token');
     localStorage.removeItem('broker_refresh_token');
     localStorage.removeItem('broker_expires_at');
@@ -36,17 +36,17 @@ export const UserProvider = ({ children }) => {
       setUser(res.data.user);
       setProfile(res.data.profile);
       
-      const isMockUser = res.data.user.id === 'mock_web2_user' || res.data.user.id === 'nexus-sim-user';
+      const isMockUser = res.data.user.id === 'mock_web2_user' || res.data.user.id === 'tradox-sim-user';
       let dbModeIsLive = res.data.user.account_mode === 'live';
       
       if (isMockUser) {
-        dbModeIsLive = localStorage.getItem('nexus_is_live') === 'true';
+        dbModeIsLive = localStorage.getItem('tradox_is_live') === 'true';
         res.data.user.account_mode = dbModeIsLive ? 'live' : 'demo';
         setUser(res.data.user);
       }
       
       setIsLiveMode(dbModeIsLive);
-      localStorage.setItem('nexus_is_live', String(dbModeIsLive));
+      localStorage.setItem('tradox_is_live', String(dbModeIsLive));
       
       // Rehydrate local broker state from valid tokens, else use backend status
       const localToken = localStorage.getItem('broker_access_token');
@@ -66,10 +66,10 @@ export const UserProvider = ({ children }) => {
       if (!err.response) {
         setUser({
           id: userId,
-          username: 'NexusUser',
-          email: 'user@nexus.ai',
+          username: 'TradoxUser',
+          email: 'user@tradox.ai',
           kyc_status: 'VERIFIED',
-          account_mode: localStorage.getItem('nexus_is_live') === 'true' ? 'live' : 'demo',
+          account_mode: localStorage.getItem('tradox_is_live') === 'true' ? 'live' : 'demo',
           isPremium: false,
           subscription_plan: 'Free'
         });
@@ -87,7 +87,7 @@ export const UserProvider = ({ children }) => {
 
   useEffect(() => {
     // Check for saved user ID in local storage
-    const savedUserId = localStorage.getItem('nexus_user_id');
+    const savedUserId = localStorage.getItem('tradox_user_id');
     if (savedUserId) {
       fetchUserData(savedUserId);
     } else {
@@ -106,18 +106,18 @@ export const UserProvider = ({ children }) => {
   const login = useCallback(async (username, password) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password });
-      localStorage.setItem('nexus_user_id', res.data.user_id);
-      if (res.data.token) localStorage.setItem('nexus_jwt', res.data.token);
+      localStorage.setItem('tradox_user_id', res.data.user_id);
+      if (res.data.token) localStorage.setItem('tradox_jwt', res.data.token);
       await fetchUserData(res.data.user_id);
-      if (!localStorage.getItem('nexus_jwt')) {
+      if (!localStorage.getItem('tradox_jwt')) {
         return { success: false, error: 'Session initialization failed' };
       }
       return { success: true };
     } catch (err) {
       // Mock login for offline frontend simulation
       if (!err.response) {
-        const dummyId = 'nexus-sim-user';
-        localStorage.setItem('nexus_user_id', dummyId);
+        const dummyId = 'tradox-sim-user';
+        localStorage.setItem('tradox_user_id', dummyId);
         await fetchUserData(dummyId);
         return { success: true };
       }
@@ -126,8 +126,8 @@ export const UserProvider = ({ children }) => {
   }, [fetchUserData]);
 
   const loginWithWallet = useCallback(async (token, userData) => {
-    localStorage.setItem('nexus_jwt', token);
-    localStorage.setItem('nexus_user_id', userData.walletAddress);
+    localStorage.setItem('tradox_jwt', token);
+    localStorage.setItem('tradox_user_id', userData.walletAddress);
     
     // Stub ENS resolution (can be replaced with ethers.js/wagmi lookup)
     const mockEns = null; 
@@ -155,18 +155,18 @@ export const UserProvider = ({ children }) => {
   const loginWithGoogle = useCallback(async (credential) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/google`, { credential });
-      localStorage.setItem('nexus_user_id', res.data.user_id);
-      if (res.data.token) localStorage.setItem('nexus_jwt', res.data.token);
+      localStorage.setItem('tradox_user_id', res.data.user_id);
+      if (res.data.token) localStorage.setItem('tradox_jwt', res.data.token);
       await fetchUserData(res.data.user_id);
-      if (!localStorage.getItem('nexus_jwt')) {
+      if (!localStorage.getItem('tradox_jwt')) {
         return { success: false, error: 'Failed to retrieve authenticated profile session' };
       }
       return { success: true };
     } catch (err) {
       // Mock Google login for offline frontend simulation when backend is down.
       if (!err.response) {
-        const dummyId = 'nexus-sim-user';
-        localStorage.setItem('nexus_user_id', dummyId);
+        const dummyId = 'tradox-sim-user';
+        localStorage.setItem('tradox_user_id', dummyId);
         await fetchUserData(dummyId);
         return { success: true };
       }
@@ -195,7 +195,7 @@ export const UserProvider = ({ children }) => {
         account_mode: newMode
       });
       setIsLiveMode(!isLiveMode);
-      localStorage.setItem('nexus_is_live', String(!isLiveMode));
+      localStorage.setItem('tradox_is_live', String(!isLiveMode));
       setUser({ ...user, account_mode: newMode });
       window.dispatchEvent(new Event('broker_token_updated'));
       return { success: true };
@@ -203,7 +203,7 @@ export const UserProvider = ({ children }) => {
       console.warn('Backend failed to switch mode, falling back to local state:', err);
       // Mock toggle for offline frontend simulation or if DB times out
       setIsLiveMode(!isLiveMode);
-      localStorage.setItem('nexus_is_live', String(!isLiveMode));
+      localStorage.setItem('tradox_is_live', String(!isLiveMode));
       setUser({ ...user, account_mode: newMode });
       window.dispatchEvent(new Event('broker_token_updated'));
       return { success: true };

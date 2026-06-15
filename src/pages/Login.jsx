@@ -21,7 +21,7 @@ const Login = () => {
 
   // Restore remembered username
   useEffect(() => {
-    const saved = localStorage.getItem('nexus_remembered_user');
+    const saved = localStorage.getItem('tradox_remembered_user');
     if (saved) {
       setUsername(saved);
       setRememberMe(true);
@@ -43,7 +43,7 @@ const Login = () => {
       const signer = await provider.getSigner();
 
       // 2. Fetch a nonce from the backend (mocked for frontend demo if backend is offline)
-      let nonce = `NexusAI Verification: Sign this message to prove ownership of ${address}. Nonce: ${Date.now()}`;
+      let nonce = `Tradox Verification: Sign this message to prove ownership of ${address}. Nonce: ${Date.now()}`;
       try {
         const nonceRes = await axios.post(`${API_BASE_URL}/api/auth/nonce`, { walletAddress: address });
         if (nonceRes.data.nonce) {
@@ -96,9 +96,9 @@ const Login = () => {
     setIsSubmitting(true);
 
     if (rememberMe) {
-      localStorage.setItem('nexus_remembered_user', username);
+      localStorage.setItem('tradox_remembered_user', username);
     } else {
-      localStorage.removeItem('nexus_remembered_user');
+      localStorage.removeItem('tradox_remembered_user');
     }
 
     const result = await login(username, password);
@@ -146,7 +146,7 @@ const Login = () => {
               Welcome Back
             </h1>
             <p className="text-zinc-500 mt-2 text-sm font-medium">
-              Sign in to your NexusAI trading account
+              Sign in to your Tradox trading account
             </p>
           </div>
 

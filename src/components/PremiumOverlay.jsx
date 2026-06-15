@@ -46,7 +46,7 @@ export default function PremiumOverlay() {
         key: rzpKey, // Dynamically loaded key from config
         amount: order.amount,
         currency: order.currency,
-        name: 'NexusAI',
+        name: 'Tradox',
         description: `${planName} Subscription`,
         order_id: order.id,
         handler: async function (response) {
@@ -72,7 +72,7 @@ export default function PremiumOverlay() {
         },
         prefill: {
           name: user?.username || 'User',
-          email: user?.email || 'user@nexus.ai',
+          email: user?.email || 'user@tradox.ai',
           contact: '9999999999'
         },
         theme: {

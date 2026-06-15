@@ -120,7 +120,7 @@ const buildFallbackRiskData = (portfolio) => {
 
 router.get('/', riskCoachLimiter, async (req, res) => {
   try {
-    const userId = req.query.user_id || req.user?.id || 'nexus-sim-user';
+    const userId = req.query.user_id || req.user?.id || 'tradox-sim-user';
     const portfolio = await getPortfolioDetails(userId);
     const fallback = buildFallbackRiskData(portfolio);
 
@@ -161,7 +161,7 @@ Return only the raw JSON. No markdown backticks or extra text.
 router.post('/chat', riskCoachLimiter, async (req, res) => {
   try {
     const { message, chatHistory } = req.body;
-    const userId = req.query.user_id || req.user?.id || 'nexus-sim-user';
+    const userId = req.query.user_id || req.user?.id || 'tradox-sim-user';
     
     if (!message || typeof message !== 'string' || !message.trim()) {
       return res.status(400).json({ error: 'Message is required' });

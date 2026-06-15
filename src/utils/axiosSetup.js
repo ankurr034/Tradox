@@ -79,7 +79,7 @@ const requestInterceptor = async (config) => {
     }
   }
   
-  const userToken = localStorage.getItem('nexus_jwt');
+  const userToken = localStorage.getItem('tradox_jwt');
   if (userToken) {
     config.headers['X-User-Token'] = `Bearer ${userToken}`;
   }

@@ -94,7 +94,7 @@ router.get('/market/pulse', (req, res) => {
 router.get('/watchlist', async (req, res) => {
   try {
     const { user_id } = req.query;
-    if (!user_id || user_id === 'mock_web2_user' || user_id === 'nexus-sim-user') {
+    if (!user_id || user_id === 'mock_web2_user' || user_id === 'tradox-sim-user') {
       const defaultSymbols = ['RELIANCE', 'TCS', 'TATAMOTORS', 'HDFCBANK'];
       return res.json({ watchlist: defaultSymbols });
     }
@@ -126,7 +126,7 @@ router.post('/watchlist/toggle', async (req, res) => {
 
     const cleanSymbol = symbol.toUpperCase().replace('.NS', '');
 
-    if (user_id === 'mock_web2_user' || user_id === 'nexus-sim-user') {
+    if (user_id === 'mock_web2_user' || user_id === 'tradox-sim-user') {
       return res.json({ status: 'success', action: 'added' });
     }
 
@@ -187,25 +187,42 @@ router.get('/stock/:tickerId', cacheEndpoint(10), async (req, res) => {
     const cleanTicker = tickerId.toUpperCase();
     
     // Fetch live and historical data securely from centralized engine
-    const currentPrice = MarketDataService.getCurrentPrice(cleanTicker);
+    let cachedData = MarketDataService.priceCache.get(cleanTicker);
+    if (!cachedData) {
+      // Fetch it synchronously/await it so we actually get the live quote instead of the fallback!
+      await MarketDataService.fetchLiveQuotes([cleanTicker]);
+      cachedData = MarketDataService.priceCache.get(cleanTicker);
+    }
+    const currentPrice = cachedData ? cachedData.price : MarketDataService.getCurrentPrice(cleanTicker);
     const historyData = await MarketDataService.getHistoricalData(cleanTicker, range_type || '1M');
+
+    // Dynamic fallback metrics using consistent hash baselines
+    const hash = cleanTicker.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const pe = 15 + (hash % 25) + (hash % 10) / 10;
+    const pb = 1.5 + (hash % 6) / 2;
+    const roe = 0.08 + (hash % 15) / 100;
+    const de = 10 + (hash % 90);
+    const dy = (hash % 4) / 100;
+
+    const rawFunds = cachedData?.fundamentals || {};
+    const fundamentals = {
+      market_cap: rawFunds.market_cap || currentPrice * (50000000 + (hash % 50) * 1000000),
+      pe_ratio: rawFunds.pe_ratio || pe,
+      pb_ratio: rawFunds.pb_ratio || pb,
+      roe: rawFunds.roe || roe,
+      eps: rawFunds.eps || currentPrice / (rawFunds.pe_ratio || pe),
+      div_yield: rawFunds.div_yield !== undefined && rawFunds.div_yield !== null ? rawFunds.div_yield : dy,
+      debt_to_equity: rawFunds.debt_to_equity !== undefined && rawFunds.debt_to_equity !== null ? rawFunds.debt_to_equity : de,
+      high_52: rawFunds.high_52 || currentPrice * 1.25,
+      low_52: rawFunds.low_52 || currentPrice * 0.75
+    };
 
     res.json({
       ticker: tickerId,
       current_price: currentPrice,
-      sector: 'Technology',
+      sector: cleanTicker.includes('RELIANCE') ? 'Energy' : cleanTicker.includes('TCS') || cleanTicker.includes('INFY') ? 'Technology' : cleanTicker.includes('HDFCBANK') || cleanTicker.includes('ICICIBANK') ? 'Financials' : 'Conglomerate',
       isin: `INE${cleanTicker.substring(0,3)}A01018`,
-      fundamentals: {
-        market_cap: currentPrice * 10000000,
-        pe_ratio: 25.4,
-        pb_ratio: 3.2,
-        roe: 0.18,
-        eps: currentPrice / 25.4,
-        div_yield: 0.015,
-        debt_to_equity: 45,
-        high_52: currentPrice * 1.2,
-        low_52: currentPrice * 0.7
-      },
+      fundamentals,
       history: historyData,
       prediction: currentPrice * 1.05,
       ai_insights: {
@@ -214,7 +231,7 @@ router.get('/stock/:tickerId', cacheEndpoint(10), async (req, res) => {
         momentum_score: 65 + (cleanTicker.charCodeAt(0) % 25)
       },
       news: [
-        { title: `Strong institutional buying detected in ${tickerId}`, publisher: 'Nexus Intelligence', link: '#', ai_sentiment: 'BULLISH', ai_sentiment_color: '#10b981' },
+        { title: `Strong institutional buying detected in ${tickerId}`, publisher: 'Tradox Intelligence', link: '#', ai_sentiment: 'BULLISH', ai_sentiment_color: '#10b981' },
         { title: `Sector rotation favors ${tickerId}`, publisher: 'Market Watch', link: '#', ai_sentiment: 'POSITIVE', ai_sentiment_color: '#3b82f6' }
       ]
     });
@@ -244,7 +261,7 @@ router.get('/news', (req, res) => {
     if (!symbol) return res.status(400).json({ detail: 'Symbol required' });
     res.json({
       news: [
-        { title: `Strong institutional buying detected in ${symbol}`, publisher: 'Nexus Intelligence', link: '#', ai_sentiment: 'BULLISH', ai_sentiment_color: '#10b981' },
+        { title: `Strong institutional buying detected in ${symbol}`, publisher: 'Tradox Intelligence', link: '#', ai_sentiment: 'BULLISH', ai_sentiment_color: '#10b981' },
         { title: `Sector rotation favors ${symbol}`, publisher: 'Market Watch', link: '#', ai_sentiment: 'POSITIVE', ai_sentiment_color: '#3b82f6' },
         { title: `${symbol} upcoming earnings expectations`, publisher: 'Bloomberg', link: '#', ai_sentiment: 'NEUTRAL', ai_sentiment_color: '#8b5cf6' }
       ]
@@ -321,7 +338,7 @@ router.post('/broker/connect', async (req, res) => {
     if (!user_id) return res.status(400).json({ detail: 'User ID required' });
     
     // Attempt to update user in DB
-    if (user_id !== 'mock_web2_user' && user_id !== 'nexus-sim-user') {
+    if (user_id !== 'mock_web2_user' && user_id !== 'tradox-sim-user') {
       const User = (await import('../models/User.js')).default;
       const mongoose = (await import('mongoose')).default;
       let query = mongoose.Types.ObjectId.isValid(user_id) ? { _id: user_id } : { walletAddress: user_id.toLowerCase() };
@@ -372,7 +389,7 @@ router.post('/broker/refresh', async (req, res) => {
 
 router.post('/broker/order', async (req, res) => {
   const routeStart = performance.now();
-  const activeUser = req.body.user_id || req.query.user_id || 'nexus-sim-user';
+  const activeUser = req.body.user_id || req.query.user_id || 'tradox-sim-user';
   
   // ── Parse order from both flat body and wrapped order_config ──
   const oc = req.body.order_config || {};

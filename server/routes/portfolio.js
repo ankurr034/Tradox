@@ -5,7 +5,7 @@ import { dbUnavailableDetail, isDbReady } from '../utils/dbReady.js';
 
 const router = express.Router();
 
-const DEMO_IDS = ['mock_web2_user', 'nexus-sim-user'];
+const DEMO_IDS = ['mock_web2_user', 'tradox-sim-user'];
 
 function buildDemoPortfolio() {
   const demoHoldings = [
@@ -42,7 +42,7 @@ function buildDemoPortfolio() {
 // ═══════════════════════════════════════════════════════════
 router.get('/', async (req, res) => {
   try {
-    const userId = req.query.user_id || 'nexus-sim-user';
+    const userId = req.query.user_id || 'tradox-sim-user';
     const isDemoUser = DEMO_IDS.includes(userId);
     
     if (!isDbReady()) {
@@ -104,7 +104,7 @@ router.get('/', async (req, res) => {
 // ═══════════════════════════════════════════════════════════
 router.get('/analysis', async (req, res) => {
   try {
-    const userId = req.query.user_id || 'nexus-sim-user';
+    const userId = req.query.user_id || 'tradox-sim-user';
     const isDemoUser = DEMO_IDS.includes(userId);
     
     const positions = isDbReady()

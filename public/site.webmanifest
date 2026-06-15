@@ -1,7 +1,7 @@
 {
-  "name": "NexusAI",
-  "short_name": "NexusAI",
-  "description": "India's Most Intelligent AI-Powered Stock Trading Platform.",
+  "name": "Tradox",
+  "short_name": "Tradox",
+  "description": "Trade. Grow. Dominate.",
   "icons": [
     {
       "src": "/favicon.svg",
@@ -10,9 +10,9 @@
       "purpose": "any maskable"
     },
     {
-      "src": "/favicon.png",
+      "src": "/icon.svg",
       "sizes": "192x192 512x512",
-      "type": "image/png"
+      "type": "image/svg+xml"
     }
   ],
   "start_url": "/",

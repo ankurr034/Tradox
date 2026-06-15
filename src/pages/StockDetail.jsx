@@ -6,6 +6,7 @@ import { useToast } from '../components/Toast';
 import axios from 'axios';
 import CDSLModal from '../components/CDSLModal';
 import { useUser } from '../context/UserContext';
+import { useTheme } from '../context/ThemeContext';
 import { API_BASE_URL } from '../config';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -18,6 +19,7 @@ import { formatTradingViewSymbol } from '../utils/symbolFormatter';
 
 const TVWidgetWrapper = React.memo(({ tvSymbol }) => {
   const containerId = React.useId().replace(/:/g, '_');
+  const { theme } = useTheme();
 
   useEffect(() => {
     let _tvWidget = null;
@@ -27,14 +29,14 @@ const TVWidgetWrapper = React.memo(({ tvSymbol }) => {
       if (typeof window !== 'undefined' && window.TradingView && isMounted) {
         _tvWidget = new window.TradingView.widget({
           symbol: tvSymbol,
-          theme: "dark",
+          theme: theme === 'light' ? 'light' : 'dark',
           autosize: true,
           allow_symbol_change: false,
           hide_side_toolbar: false,
           enable_publishing: false,
           hide_top_toolbar: false,
           save_image: false,
-          toolbar_bg: "#0f172a",
+          toolbar_bg: theme === 'light' ? "#ffffff" : "#0f172a",
           studies: [
             "Volume@tv-basicstudies",
             "MASimple@tv-basicstudies"
@@ -67,7 +69,7 @@ const TVWidgetWrapper = React.memo(({ tvSymbol }) => {
     return () => {
       isMounted = false;
     };
-  }, [tvSymbol, containerId]);
+  }, [tvSymbol, containerId, theme]);
 
   return (
     <div className="w-full h-full relative">
@@ -97,6 +99,7 @@ export default function StockDetail() {
   const [_chartType, _setChartType] = useState('Line');
   const [cdslOpen, setCdslOpen] = useState(false);
   const [exchange, setExchange] = useState('BSE'); // Default to BSE for better TradingView widget resolution
+  const [livePrice, setLivePrice] = useState(0);
 
   // Formatted symbol using useMemo
   const tvSymbol = React.useMemo(() => formatTradingViewSymbol(tickerId, exchange), [tickerId, exchange]);
@@ -114,7 +117,10 @@ export default function StockDetail() {
   useEffect(() => {
      Promise.resolve().then(() => {
        if (cdslRes) setIsAuthorized(cdslRes.authorized);
-       if (data?.current_price) setPrice(data.current_price);
+       if (data?.current_price) {
+         setPrice(data.current_price);
+         setLivePrice(data.current_price);
+       }
      });
   }, [cdslRes, data]);
 
@@ -132,12 +138,18 @@ export default function StockDetail() {
 
   useEffect(() => {
     if (socketData && Array.isArray(socketData)) {
-      const match = socketData.find(d => d.symbol === activeTicker.replace('.NS', '').replace('.BO', ''));
+      const match = socketData.find(d => d.symbol === activeTicker || d.symbol === activeTicker.replace('.NS', '').replace('.BO', ''));
       if (match) {
-        Promise.resolve().then(() => setPrice(parseFloat(match.value.replace(/,/g, ''))));
+        const val = typeof match.price === 'number' ? match.price : (match.value ? parseFloat(match.value.replace(/₹/g, '').replace(/,/g, '')) : parseFloat(match.price));
+        if (!isNaN(val) && val > 0) {
+          setLivePrice(val);
+          if (orderMode === 'Market') {
+            setPrice(val);
+          }
+        }
       }
     }
-  }, [socketData, activeTicker]);
+  }, [socketData, activeTicker, orderMode]);
 
   const fetchBalance = useCallback(async () => {
     if (!user) return;
@@ -233,7 +245,7 @@ export default function StockDetail() {
     }
   };
 
-  const currentPrice = data?.current_price || 0;
+  const currentPrice = livePrice || data?.current_price || 0;
   const previousPrice = historyData?.[historyData.length - 2]?.close || currentPrice;
   const dayChange = currentPrice - previousPrice;
   const dayChangePercent = previousPrice > 0 ? (dayChange / previousPrice) * 100 : 0;
