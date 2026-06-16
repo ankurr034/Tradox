@@ -755,6 +755,22 @@ if (!process.env.REDIS_URL || !isRedisReady) {
 
   // Broadcast stock updates — batched (fallback mode only)
   setInterval(() => {
+    // Generate simulated micro-fluctuations (+/- 0.03% max) to make UI tick realistically every second
+    activeTickers.forEach(symbol => {
+      const cached = MarketDataService.priceCache.get(symbol);
+      if (cached) {
+        const pct = (Math.random() - 0.5) * 0.0006;
+        const delta = cached.price * pct;
+        cached.price = parseFloat((cached.price + delta).toFixed(2));
+        cached.change = parseFloat((cached.change + delta).toFixed(2));
+        const openPrice = cached.price - cached.change;
+        if (openPrice > 0) {
+          cached.changePercent = parseFloat(((cached.change / openPrice) * 100).toFixed(2));
+        }
+        MarketDataService.priceCache.set(symbol, cached);
+      }
+    });
+
     const updates = MarketDataService.getLivePricesForBroadcast(activeTickers);
     if (updates && updates.length > 0) {
       io.emit('price_update', updates);

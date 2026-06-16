@@ -309,6 +309,7 @@ class MarketDataService {
 
       return {
         symbol,
+        price: data.price,
         value: data.price.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }),
         change: (data.change >= 0 ? '+' : '') + data.change.toFixed(2),
         pct: (data.changePercent >= 0 ? '+' : '') + data.changePercent.toFixed(2) + '%',
