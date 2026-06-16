@@ -31,7 +31,7 @@ const TVWidgetWrapper = React.memo(({ tvSymbol }) => {
           symbol: tvSymbol,
           theme: theme === 'light' ? 'light' : 'dark',
           autosize: true,
-          interval: '1',
+          interval: 'D',
           allow_symbol_change: false,
           hide_side_toolbar: false,
           enable_publishing: false,
