@@ -14,6 +14,8 @@ const BROKERS = [
   { id: 'angel', name: 'Angel One', logo: 'A1', color: 'bg-blue-800', iconColor: 'text-blue-800' },
 ];
 
+const generateCred = (prefix) => `${prefix}-${Math.random().toString(36).substring(7).toUpperCase()}`;
+
 export default function BrokerLink() {
   const { user, refreshUser, brokerConnected } = useUser();
   const toast = useToast();
@@ -42,9 +44,9 @@ export default function BrokerLink() {
       // Direct integration with backend via centralized axios instance
       const res = await axiosInstance.post(`/api/broker/connect?user_id=${user.id}`, {
         broker_name: broker.name,
-        api_key: `AK-${Math.random().toString(36).substring(7).toUpperCase()}`,
-        api_secret: `AS-${Math.random().toString(36).substring(7).toUpperCase()}`,
-        client_id: `CID-${Math.random().toString(36).substring(7).toUpperCase()}`
+        api_key: generateCred('AK'),
+        api_secret: generateCred('AS'),
+        client_id: generateCred('CID')
       });
       
       const { access_token, refresh_token, expires_at, is_sandbox } = res.data;

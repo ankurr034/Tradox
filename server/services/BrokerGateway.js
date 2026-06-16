@@ -144,7 +144,7 @@ class BrokerGateway {
     return await this.getAdapter(brokerName).getHoldings(accessToken);
   }
 
-  async placeOrder(brokerName, accessToken, orderConfig, userId = 'nexus-sim-user') {
+  async placeOrder(brokerName, accessToken, orderConfig, userId = 'tradox-sim-user') {
     // 1. Paper Trading Simulator Intercept
     if (orderConfig.isPaperTrade) {
        return await PaperTradingEngine.executeOrder(userId, orderConfig);

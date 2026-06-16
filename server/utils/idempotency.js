@@ -21,7 +21,7 @@ export class IdempotencyManager {
   static async checkAndRegister(key, requestBody) {
     const payloadHash = getPayloadHash(requestBody);
     const redisKey = `idempotency:order:${key}`;
-    const ttlSeconds = 120; // 2 minutes TTL
+    const _ttlSeconds = 120; // 2 minutes TTL
 
     if (process.env.REDIS_URL && isRedisReady) {
       const existing = await redisClient.get(redisKey);

@@ -9,33 +9,28 @@ import { API_BASE_URL } from '../config';
 export default function FnO() {
   const toast = useToast();
   const [index, setIndex] = useState('NIFTY');
-  const [balance, setBalance] = useState(0);
   const [selectedContract, setSelectedContract] = useState(null);
   const [chainData, setChainData] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const spotPrice = chainData?.spot || (index === 'NIFTY' ? 22450.60 : 47683.45);
-  const strikeStep = index === 'NIFTY' ? 50 : 100;
   const lotSize = index === 'NIFTY' ? 50 : 15;
 
-  const fetchChain = async () => {
+  const fetchChain = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/fno/chain/${index}`);
       setChainData(res.data);
-      
-      const balRes = await axios.get(`${API_BASE_URL}/api/wallet`);
-      setBalance(balRes.data.balance);
     } catch (e) {
       console.error("Chain fetch error", e);
     } finally {
       setLoading(false);
     }
-  };
+  }, [index]);
 
   useEffect(() => {
     fetchChain();
-  }, [index]);
+  }, [fetchChain]);
 
   const handleContractSelect = (strike, type, price) => {
     setSelectedContract({ strike, type, price, index, lotSize, premium: price * lotSize });

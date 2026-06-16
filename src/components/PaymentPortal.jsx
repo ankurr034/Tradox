@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Shield, Lock, CreditCard, Landmark, Wallet, CheckCircle2, ChevronRight, X, RefreshCw, Smartphone, Key } from 'lucide-react';
+import { Shield, Lock, CreditCard, Landmark, Wallet, CheckCircle2, X, RefreshCw, Smartphone, Key } from 'lucide-react';
 import axios from 'axios';
 import { useUser } from '../context/UserContext';
 import { useToast } from './Toast';
@@ -12,16 +12,20 @@ export default function PaymentPortal({ isOpen, onClose, amount, onPaymentSucces
   const [inputValue, setInputValue] = useState('');
   const [otp, setOtp] = useState('');
   const [loadingText, setLoadingText] = useState('Initiating secure connection...');
+  const [txnId, setTxnId] = useState('');
   
   const { user, refreshUser } = useUser();
   const toast = useToast();
   
   useEffect(() => {
     if (isOpen) {
-      setStep('METHODS');
-      setMethod(null);
-      setInputValue('');
-      setOtp('');
+      Promise.resolve().then(() => {
+        setStep('METHODS');
+        setMethod(null);
+        setInputValue('');
+        setOtp('');
+        setTxnId('');
+      });
     }
   }, [isOpen]);
 
@@ -61,10 +65,11 @@ export default function PaymentPortal({ isOpen, onClose, amount, onPaymentSucces
         await axios.post(`${API_BASE_URL}/api/wallet/refill?user_id=${user?.id || 1}`, { 
           amount: parseFloat(amount) 
         });
-      } catch (err) {
+      } catch {
         console.warn('Backend unavailable, simulating successful payment locally.');
       }
       
+      setTxnId(`TXN${Math.random().toString().slice(2, 12)}`);
       setStep('SUCCESS');
       toast.success(`₹${parseFloat(amount).toLocaleString()} added to wallet successfully!`);
       if (refreshUser) refreshUser();
@@ -73,87 +78,74 @@ export default function PaymentPortal({ isOpen, onClose, amount, onPaymentSucces
         if (onPaymentSuccess) onPaymentSuccess(parseFloat(amount));
         if (onClose) onClose();
       }, 2500);
-    } catch (e) {
-      console.warn('Unhandled exception in payment flow, forcing success:', e);
-      setStep('SUCCESS');
-      toast.success(`₹${parseFloat(amount).toLocaleString()} added to wallet successfully!`);
-      
-      setTimeout(() => {
-        if (onPaymentSuccess) onPaymentSuccess(parseFloat(amount));
-        if (onClose) onClose();
-      }, 2500);
+    } catch {
+      toast.error('Payment verification failed');
+      setStep('METHODS');
     }
   };
-
-  const paymentMethods = [
-    { id: 'upi', name: 'UPI (GPay, PhonePe, Paytm)', icon: <Smartphone className="w-5 h-5" />, color: 'bg-emerald-500' },
-    { id: 'card', name: 'Credit / Debit Card', icon: <CreditCard className="w-5 h-5" />, color: 'bg-blue-500' },
-    { id: 'net', name: 'Net Banking', icon: <Landmark className="w-5 h-5" />, color: 'bg-amber-500' },
-    { id: 'wallet', name: 'Wallets', icon: <Wallet className="w-5 h-5" />, color: 'bg-rose-500' },
-  ];
 
   if (!isOpen) return null;
 
   return (
     <AnimatePresence>
-      <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
         <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1 }} 
-          exit={{ opacity: 0 }} 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
           onClick={onClose}
-          className="absolute inset-0 bg-black/80 backdrop-blur-sm" 
+          className="absolute inset-0 bg-[#02040a]/80 backdrop-blur-sm"
         />
-        
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0, y: 20 }}
-          animate={{ scale: 1, opacity: 1, y: 0 }}
-          exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          className="relative w-full max-w-md bg-[#0f172a] border border-white/10 rounded-2xl overflow-hidden shadow-2xl"
+
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95, y: 10 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.95, y: 10 }}
+          className="w-full max-w-md bg-[#0a0f1d]/90 border border-white/[0.08] rounded-2xl shadow-2xl relative overflow-hidden z-10"
         >
-          {/* Header */}
-          <div className="p-5 border-b border-white/5 flex items-center justify-between bg-white/[0.02]">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center shadow-lg">
-                <Shield className="w-4 h-4 text-white" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-white tracking-wide">Secure Checkout</h4>
-                <p className="text-[10px] text-zinc-400 font-medium tracking-wider">NEXUS AI TRADING</p>
-              </div>
-            </div>
-            <button onClick={onClose} className="p-2 hover:bg-white/10 rounded-full text-zinc-400 transition-colors">
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+          <div className="h-1 bg-gradient-to-r from-emerald-500 to-blue-500 w-full" />
+          
+          <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 text-zinc-500 hover:text-zinc-300 transition-colors p-1"
+          >
+            <X className="w-5 h-5" />
+          </button>
 
           <div className="p-6">
-            {step === 'METHODS' && (
-              <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                <div className="text-center mb-6">
-                  <p className="text-[11px] font-semibold text-zinc-400 uppercase tracking-widest mb-2">Amount to Pay</p>
-                  <h3 className="text-4xl font-black text-white tracking-tight">₹{parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</h3>
-                </div>
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center text-emerald-500">
+                <Lock className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-lg font-black text-white">Nexus Secure Pay</h2>
+                <p className="text-zinc-500 text-[10px] font-bold uppercase tracking-widest">Amount: <span className="text-zinc-300 font-semibold">₹{parseFloat(amount || 0).toLocaleString()}</span></p>
+              </div>
+            </div>
 
-                <div className="space-y-2.5">
-                  <p className="text-xs font-bold text-zinc-500 uppercase tracking-wider mb-3">Select Payment Method</p>
-                  {paymentMethods.map((m) => (
+            {step === 'METHODS' && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <p className="text-xs text-zinc-400 font-medium mb-2">Select a payment method to complete the transaction:</p>
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { id: 'card', label: 'Card Payment', icon: <CreditCard className="w-5 h-5" /> },
+                    { id: 'upi', label: 'UPI / NetBanking', icon: <Smartphone className="w-5 h-5" /> },
+                    { id: 'wallet', label: 'Web3 Wallet', icon: <Wallet className="w-5 h-5" /> },
+                    { id: 'netbank', label: 'Bank Transfer', icon: <Landmark className="w-5 h-5" /> },
+                  ].map((m) => (
                     <button
                       key={m.id}
                       onClick={() => setMethod(m.id)}
-                      className={`w-full flex items-center gap-4 p-4 rounded-xl border transition-all ${
+                      className={`p-4 rounded-xl border text-left flex flex-col justify-between h-24 transition-all duration-200 cursor-pointer ${
                         method === m.id 
-                          ? 'bg-blue-500/10 border-blue-500 shadow-sm' 
-                          : 'bg-white/[0.03] border-white/5 hover:bg-white/[0.06]'
+                          ? 'border-emerald-500 bg-emerald-500/5 text-emerald-500' 
+                          : 'border-white/[0.06] bg-white/[0.02] text-zinc-400 hover:bg-white/[0.04] hover:text-zinc-200'
                       }`}
                     >
-                      <div className={`w-10 h-10 ${m.color} rounded-lg flex items-center justify-center text-white shadow-md`}>
+                      <div className="p-1.5 rounded-lg bg-white/[0.03] w-fit">
                         {m.icon}
                       </div>
-                      <span className="flex-1 text-sm font-semibold text-white text-left">{m.name}</span>
-                      <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${method === m.id ? 'border-blue-500' : 'border-zinc-600'}`}>
-                        {method === m.id && <div className="w-2.5 h-2.5 bg-blue-500 rounded-full" />}
-                      </div>
+                      <span className="text-xs font-bold">{m.label}</span>
                     </button>
                   ))}
                 </div>
@@ -161,101 +153,96 @@ export default function PaymentPortal({ isOpen, onClose, amount, onPaymentSucces
                 <button 
                   onClick={handleNext}
                   disabled={!method}
-                  className="w-full mt-6 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+                  className="w-full py-4 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl mt-4 hover:bg-emerald-500 transition-all disabled:opacity-50"
                 >
-                  Continue <ChevronRight className="w-4 h-4" />
+                  Continue
                 </button>
               </motion.div>
             )}
 
             {step === 'INPUT' && (
-              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="space-y-6">
-                <div className="flex items-center gap-3 mb-6">
-                  <button onClick={() => setStep('METHODS')} className="p-2 hover:bg-white/10 rounded-lg text-zinc-400">
-                    <ChevronRight className="w-5 h-5 rotate-180" />
-                  </button>
-                  <h3 className="text-lg font-bold text-white">
-                    {method === 'card' ? 'Enter Card Details' : 'Enter UPI ID'}
-                  </h3>
-                </div>
-
-                <div className="space-y-4">
-                  {method === 'card' ? (
-                    <>
-                      <div>
-                        <label className="text-xs font-semibold text-zinc-400 mb-2 block">Card Number</label>
-                        <input type="text" placeholder="XXXX XXXX XXXX XXXX" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
-                      </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="text-xs font-semibold text-zinc-400 mb-2 block">Expiry (MM/YY)</label>
-                          <input type="text" placeholder="MM/YY" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
-                        </div>
-                        <div className="flex-1">
-                          <label className="text-xs font-semibold text-zinc-400 mb-2 block">CVV</label>
-                          <input type="password" placeholder="•••" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
-                        </div>
-                      </div>
-                    </>
-                  ) : (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                {method === 'card' && (
+                  <div className="space-y-3">
                     <div>
-                      <label className="text-xs font-semibold text-zinc-400 mb-2 block">UPI ID / VPA</label>
-                      <input type="text" placeholder="username@upi" className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-blue-500" />
+                      <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block mb-1.5">Card Number</label>
+                      <input 
+                        type="text" 
+                        placeholder="•••• •••• •••• ••••"
+                        value={inputValue}
+                        onChange={(e) => setInputValue(e.target.value)}
+                        className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl py-3 px-4 text-white text-sm font-semibold focus:outline-none focus:border-emerald-500/30 transition-all"
+                      />
                     </div>
-                  )}
-                </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block mb-1.5">Expiry Date</label>
+                        <input type="text" placeholder="MM/YY" className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl py-3 px-4 text-white text-sm font-semibold focus:outline-none focus:border-emerald-500/30 transition-all" />
+                      </div>
+                      <div>
+                        <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block mb-1.5">CVV</label>
+                        <input type="password" placeholder="•••" className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl py-3 px-4 text-white text-sm font-semibold focus:outline-none focus:border-emerald-500/30 transition-all" />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {method === 'upi' && (
+                  <div>
+                    <label className="text-[9px] font-black uppercase tracking-widest text-zinc-500 block mb-1.5">UPI ID (VPA)</label>
+                    <input 
+                      type="text" 
+                      placeholder="username@upi" 
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      className="w-full bg-white/[0.03] border border-white/[0.06] rounded-xl py-3 px-4 text-white text-sm font-semibold focus:outline-none focus:border-emerald-500/30 transition-all"
+                    />
+                  </div>
+                )}
 
                 <button 
                   onClick={processPayment}
-                  className="w-full mt-6 py-4 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-500 transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-500/20"
+                  className="w-full py-4 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-all"
                 >
-                  Pay ₹{parseFloat(amount).toLocaleString('en-IN')} securely <Lock className="w-4 h-4" />
+                  Pay ₹{parseFloat(amount).toLocaleString()}
                 </button>
               </motion.div>
             )}
 
             {step === 'PROCESSING' && (
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-16 text-center space-y-6">
-                <div className="relative mx-auto w-20 h-20">
-                  <RefreshCw className="w-20 h-20 text-blue-500 animate-spin opacity-20" />
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Shield className="w-8 h-8 text-blue-400" />
-                  </div>
-                </div>
+              <div className="py-12 text-center space-y-6">
+                <RefreshCw className="w-10 h-10 text-emerald-500 animate-spin mx-auto" />
                 <div>
-                  <h3 className="text-xl font-bold text-white mb-2">Processing Payment</h3>
-                  <p className="text-zinc-400 text-sm">{loadingText}</p>
+                  <h3 className="text-white font-bold mb-1">{loadingText}</h3>
+                  <p className="text-zinc-500 text-xs font-semibold uppercase tracking-widest">Please do not close this window</p>
                 </div>
-              </motion.div>
+              </div>
             )}
 
             {step === 'OTP' && (
-              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="space-y-6 py-4">
-                <div className="text-center mb-6">
-                  <div className="w-16 h-16 bg-blue-500/10 rounded-full flex items-center justify-center mx-auto mb-4 border border-blue-500/20">
-                    <Key className="w-8 h-8 text-blue-400" />
-                  </div>
-                  <h3 className="text-xl font-bold text-white mb-2">Authentication Required</h3>
-                  <p className="text-sm text-zinc-400">Please enter the OTP sent to your registered mobile number to authorize this transaction.</p>
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-4">
+                <div className="text-center mb-4">
+                  <Key className="w-8 h-8 text-amber-400 mx-auto mb-3" />
+                  <h3 className="text-white font-bold mb-1">Enter Security PIN / OTP</h3>
+                  <p className="text-zinc-500 text-xs">A validation code has been sent to your bank registered mobile.</p>
                 </div>
 
-                <div>
+                <div className="flex justify-center">
                   <input 
-                    type="text" 
+                    type="password" 
+                    placeholder="••••"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value)}
-                    placeholder="Enter 4-6 digit OTP" 
                     maxLength={6}
-                    className="w-full bg-black/40 border border-white/10 rounded-xl px-4 py-4 text-center text-2xl tracking-[0.5em] font-mono text-white focus:outline-none focus:border-blue-500" 
+                    className="bg-white/[0.03] border border-white/[0.06] rounded-xl py-3 px-6 text-center text-xl font-bold tracking-[0.5em] w-36 text-white focus:outline-none focus:border-emerald-500/30 transition-all"
                   />
                 </div>
 
                 <button 
                   onClick={verifyOtpAndPay}
-                  disabled={otp.length < 4}
-                  className="w-full py-4 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-500 transition-all disabled:opacity-50 shadow-lg shadow-emerald-500/20"
+                  className="w-full py-4 bg-emerald-600 text-white font-black uppercase tracking-widest rounded-xl hover:bg-emerald-500 transition-all"
                 >
-                  Verify & Pay
+                  Verify Payment
                 </button>
               </motion.div>
             )}
@@ -267,15 +254,15 @@ export default function PaymentPortal({ isOpen, onClose, amount, onPaymentSucces
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-white mb-2">Payment Successful!</h3>
-                  <p className="text-zinc-400 text-sm font-medium">Transaction ID: TXN{Math.random().toString().slice(2, 12)}</p>
+                  <p className="text-zinc-400 text-sm font-medium">Transaction ID: {txnId}</p>
                 </div>
               </motion.div>
             )}
             
             {(step === 'METHODS' || step === 'INPUT') && (
-              <div className="flex items-center justify-center gap-2 mt-6 pt-4 border-t border-white/5">
-                 <Shield className="w-4 h-4 text-zinc-500" />
-                 <p className="text-[10px] font-semibold text-zinc-500 uppercase tracking-widest">100% Secure Encrypted Payment</p>
+              <div className="flex items-center justify-center gap-2 mt-8 pt-4 border-t border-white/5">
+                 <Shield className="w-4 h-4 text-zinc-600" />
+                 <p className="text-[9px] font-bold text-zinc-600 uppercase tracking-widest">100% Secure Encrypted Payment</p>
               </div>
             )}
           </div>

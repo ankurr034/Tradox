@@ -47,7 +47,7 @@ export default function CopyTrading() {
       }, { params: { user_id: user?.id || 1 } });
       toast.success(res.data.message);
       setFollowModal(null);
-    } catch (e) { toast.error('Failed to follow trader'); }
+    } catch { toast.error('Failed to follow trader'); }
     finally { setFollowing(false); }
   };
 

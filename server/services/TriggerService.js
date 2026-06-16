@@ -1,7 +1,7 @@
 import Trigger from '../models/Trigger.js';
 import PaperTradingEngine from './PaperTradingEngine.js';
 import { createLogger } from '../utils/logger.js';
-import mongoose from 'mongoose';
+
 
 const log = createLogger('TriggerService');
 

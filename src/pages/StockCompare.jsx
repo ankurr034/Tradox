@@ -22,16 +22,16 @@ export default function StockCompare() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { fetchComparison(); }, [symbols]);
-
-  const fetchComparison = async () => {
+  const fetchComparison = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/compare?symbols=${symbols}`);
       setData(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [symbols]);
+
+  useEffect(() => { fetchComparison(); }, [fetchComparison]);
 
   const handleCompare = () => {
     if (inputVal.trim()) setSymbols(inputVal.trim().toUpperCase());
@@ -178,7 +178,7 @@ export default function StockCompare() {
                     { label: '52W Low', key: '52w_low' },
                     { label: 'Rev Growth (%)', key: 'revenue_growth' },
                     { label: 'Profit Growth (%)', key: 'profit_growth' },
-                  ].map((metric, ri) => (
+                  ].map((metric) => (
                     <tr key={metric.key} className="border-b border-white/[0.02] hover:bg-white/[0.01] transition-colors">
                       <td className="p-4 text-xs font-bold text-zinc-500">{metric.label}</td>
                       {data.stocks.map(s => (

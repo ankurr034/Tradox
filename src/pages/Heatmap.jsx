@@ -67,9 +67,11 @@ export default function Heatmap() {
     }, 150);
   }, [activeIndex, setSearchParams]);
 
+  const hasData = data !== null;
+
   // WebSocket Subscription — join index-specific room for delta updates
   useEffect(() => {
-    if (!socket || !data) return;
+    if (!socket || !hasData) return;
 
     socket.emit('join_heatmap', activeIndex);
 
@@ -89,7 +91,7 @@ export default function Heatmap() {
     return () => {
       socket.off('market_heatmap_update', handleUpdate);
     };
-  }, [socket, data !== null, activeIndex]);
+  }, [socket, hasData, activeIndex]);
 
   if (loading) {
     return (

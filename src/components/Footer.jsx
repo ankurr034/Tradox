@@ -15,14 +15,19 @@ export default function Footer() {
           
           {/* Brand */}
           <div className="sm:col-span-2 lg:col-span-1">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary to-secondary flex items-center justify-center shadow-lg">
-                <Activity className="w-4 h-4 text-white" />
-              </div>
-              <span className="text-lg font-extrabold text-white tracking-tight">NexusAI</span>
+            <div className="flex items-center mb-4">
+              <svg viewBox="0 0 500 110" className="h-9 w-auto" xmlns="http://www.w3.org/2000/svg">
+                <rect x="12" y="22" width="54" height="11" rx="2" fill="#E53E3E"/>
+                <rect x="31" y="22" width="11" height="40" rx="2" fill="#E53E3E"/>
+                <rect x="74" y="20" width="11" height="56" rx="2" fill="#E53E3E" transform="rotate(45 79 48)"/>
+                <rect x="74" y="20" width="11" height="56" rx="2" fill="#E53E3E" transform="rotate(-45 79 48)"/>
+                <polygon points="79,28 88,46 79,41 70,46" fill="#fff" opacity="0.9"/>
+                <text x="108" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="38" font-weight="900" fill="#FFFFFF" letter-spacing="3">TRADOX</text>
+                <text x="109" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#888888" letter-spacing="3">TRADE · GROW · DOMINATE</text>
+              </svg>
             </div>
             <p className="text-sm text-zinc-500 leading-relaxed mb-4">
-              India's most intelligent AI-powered stock trading platform. Built with Deep Learning, real-time data, and institutional-grade analytics.
+              Trade. Grow. Dominate. India's most intelligent stock trading and portfolio intelligence platform. Built with Deep Learning, real-time data, and institutional-grade analytics.
             </p>
             <div className="flex items-center gap-1 text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
               <Shield className="w-3 h-3" /> SEBI Compliant Architecture
@@ -77,7 +82,7 @@ export default function Footer() {
         {/* Bottom Bar */}
         <div className="border-t border-white/[0.04] pt-4 sm:pt-6 flex flex-col sm:flex-row justify-between items-center gap-3 sm:gap-4">
           <p className="text-xs text-zinc-600 font-medium">
-            © {currentYear} NexusAI — AI Stock Intelligence System. Built by Ankur Rastogi.
+            © {currentYear} Tradox — Stock Trading & Intelligence System. Built by Ankur Rastogi.
           </p>
           <div className="flex items-center gap-6 text-[10px] text-zinc-600 font-bold uppercase tracking-widest">
             <span>Final Year Capstone Project</span>

@@ -1,5 +1,4 @@
-import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useEffect, useCallback } from 'react';
 import { BookOpen, Trophy, TrendingUp, TrendingDown, Calendar, Target, AlertTriangle, Lightbulb, Zap, BarChart3, ArrowUpRight, ArrowDownRight } from 'lucide-react';
 import axios from 'axios';
 import { useUser } from '../context/UserContext';
@@ -12,11 +11,7 @@ export default function TradeJournal() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
-  useEffect(() => {
-    fetchJournal();
-  }, []);
-
-  const fetchJournal = async () => {
+  const fetchJournal = useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/journal?user_id=${user?.id || 1}`);
       setData(res.data);
@@ -25,25 +20,13 @@ export default function TradeJournal() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload?.length) {
-      return (
-        <div className="bg-[#121214]/95 backdrop-blur-md border border-white/10 p-3 rounded-lg shadow-2xl">
-          <p className="text-zinc-400 text-xs mb-1 font-semibold">{label}</p>
-          {payload.map((entry, index) => (
-            <div key={index} className="flex items-center gap-2 text-sm font-medium py-0.5">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
-              <span className="text-zinc-300">{entry.name}:</span>
-              <span className="text-white">{typeof entry.value === 'number' ? (entry.name === 'P&L' ? `₹${entry.value.toFixed(0)}` : entry.value) : entry.value}</span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
+  useEffect(() => {
+    fetchJournal();
+  }, [fetchJournal]);
+
+
 
   if (loading) {
     return (
@@ -391,3 +374,21 @@ export default function TradeJournal() {
     </div>
   );
 }
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload?.length) {
+    return (
+      <div className="bg-[#121214]/95 backdrop-blur-md border border-white/10 p-3 rounded-lg shadow-2xl">
+        <p className="text-zinc-400 text-xs mb-1 font-semibold">{label}</p>
+        {payload.map((entry, index) => (
+          <div key={index} className="flex items-center gap-2 text-sm font-medium py-0.5">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color }} />
+            <span className="text-zinc-300">{entry.name}:</span>
+            <span className="text-white">{typeof entry.value === 'number' ? (entry.name === 'P&L' ? `₹${entry.value.toFixed(0)}` : entry.value) : entry.value}</span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};

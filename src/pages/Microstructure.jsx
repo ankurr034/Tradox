@@ -17,7 +17,7 @@ export default function Microstructure() {
   const { socket, isConnected, data: socketData } = useSocket('microstructure_update');
 
   const fetchData = (sym) => {
-    setLoading(true);
+    Promise.resolve().then(() => setLoading(true));
     axios.get(`${API_BASE_URL}/api/microstructure/${sym}`)
       .then(res => { setData(res.data); setSymbol(sym); })
       .catch(() => {})
@@ -36,15 +36,17 @@ export default function Microstructure() {
 
   useEffect(() => {
     if (socketData && socketData.symbol === symbol) {
-      setData(prev => {
-        if (!prev) return prev;
-        const newTape = [socketData.new_trade, ...prev.trade_tape].slice(0, 50);
-        return {
-          ...prev,
-          current_price: socketData.current_price,
-          order_book: socketData.order_book,
-          trade_tape: newTape
-        };
+      Promise.resolve().then(() => {
+        setData(prev => {
+          if (!prev) return prev;
+          const newTape = [socketData.new_trade, ...prev.trade_tape].slice(0, 50);
+          return {
+            ...prev,
+            current_price: socketData.current_price,
+            order_book: socketData.order_book,
+            trade_tape: newTape
+          };
+        });
       });
     }
   }, [socketData, symbol]);

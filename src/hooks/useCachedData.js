@@ -35,6 +35,8 @@ export default function useCachedData(url, { ttl = 60000, enabled = true, cacheK
   const [error, setError] = useState(null);
   
   const finalCacheKey = cacheKey || url;
+  const hasDataRef = useRef(false);
+  hasDataRef.current = !!data;
 
   useEffect(() => {
     if (!enabled || !url) return;
@@ -59,7 +61,7 @@ export default function useCachedData(url, { ttl = 60000, enabled = true, cacheK
          console.log(`[Cache MISS] ${finalCacheKey} - Fetching...`);
       }
 
-      if (!data) setIsLoading(true);
+      if (!hasDataRef.current) setIsLoading(true);
       setIsFetching(true);
       
       const startTime = performance.now();

@@ -6,6 +6,7 @@ import { useToast } from '../components/Toast';
 import axios from 'axios';
 import CDSLModal from '../components/CDSLModal';
 import { useUser } from '../context/UserContext';
+import { useTheme } from '../context/ThemeContext';
 import { API_BASE_URL } from '../config';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -18,23 +19,24 @@ import { formatTradingViewSymbol } from '../utils/symbolFormatter';
 
 const TVWidgetWrapper = React.memo(({ tvSymbol }) => {
   const containerId = React.useId().replace(/:/g, '_');
+  const { theme } = useTheme();
 
   useEffect(() => {
-    let tvWidget = null;
+    let _tvWidget = null;
     let isMounted = true;
 
     const initWidget = () => {
       if (typeof window !== 'undefined' && window.TradingView && isMounted) {
-        tvWidget = new window.TradingView.widget({
+        _tvWidget = new window.TradingView.widget({
           symbol: tvSymbol,
-          theme: "dark",
+          theme: theme === 'light' ? 'light' : 'dark',
           autosize: true,
           allow_symbol_change: false,
           hide_side_toolbar: false,
           enable_publishing: false,
           hide_top_toolbar: false,
           save_image: false,
-          toolbar_bg: "#0f172a",
+          toolbar_bg: theme === 'light' ? "#ffffff" : "#0f172a",
           studies: [
             "Volume@tv-basicstudies",
             "MASimple@tv-basicstudies"
@@ -67,7 +69,7 @@ const TVWidgetWrapper = React.memo(({ tvSymbol }) => {
     return () => {
       isMounted = false;
     };
-  }, [tvSymbol, containerId]);
+  }, [tvSymbol, containerId, theme]);
 
   return (
     <div className="w-full h-full relative">
@@ -92,11 +94,12 @@ export default function StockDetail() {
   const [orderSuccess, setOrderSuccess] = useState(false);
   const [balance, setBalance] = useState(0);
   const [isAuthorized, setIsAuthorized] = useState(false);
-  const [timeRange, setTimeRange] = useState('1Y');
-  const [dateRange, setDateRange] = useState({ start: '', end: '' });
-  const [chartType, setChartType] = useState('Line');
+  const [timeRange, _setTimeRange] = useState('1Y');
+  const [dateRange, _setDateRange] = useState({ start: '', end: '' });
+  const [_chartType, _setChartType] = useState('Line');
   const [cdslOpen, setCdslOpen] = useState(false);
   const [exchange, setExchange] = useState('BSE'); // Default to BSE for better TradingView widget resolution
+  const [livePrice, setLivePrice] = useState(0);
 
   // Formatted symbol using useMemo
   const tvSymbol = React.useMemo(() => formatTradingViewSymbol(tickerId, exchange), [tickerId, exchange]);
@@ -106,14 +109,19 @@ export default function StockDetail() {
   const { data: newsRes, isLoading: loadingNews } = useCachedData(`${API_BASE_URL}/api/news?symbol=${activeTicker}`, { ttl: 300000, enabled: !!user && !!activeTicker, cacheKey: `news_${activeTicker}` });
   const { data: cdslRes } = useCachedData(`${API_BASE_URL}/api/cdsl/status/${activeTicker}?user_id=${user?.id}`, { ttl: 300000, enabled: !!user && !!activeTicker, cacheKey: `cdsl_${activeTicker}` });
 
-  const historyData = historyRes?.history || [];
+  const historyData = React.useMemo(() => historyRes?.history || [], [historyRes]);
   const newsData = newsRes?.news || [];
   const loading = loadingData || loadingHistory || loadingNews;
   const error = errData;
 
   useEffect(() => {
-     if (cdslRes) setIsAuthorized(cdslRes.authorized);
-     if (data?.current_price) setPrice(data.current_price);
+     Promise.resolve().then(() => {
+       if (cdslRes) setIsAuthorized(cdslRes.authorized);
+       if (data?.current_price) {
+         setPrice(data.current_price);
+         setLivePrice(data.current_price);
+       }
+     });
   }, [cdslRes, data]);
 
   // Real-time Socket Connection
@@ -130,12 +138,20 @@ export default function StockDetail() {
 
   useEffect(() => {
     if (socketData && Array.isArray(socketData)) {
-      const match = socketData.find(d => d.symbol === activeTicker.replace('.NS', '').replace('.BO', ''));
+      const match = socketData.find(d => d.symbol === activeTicker || d.symbol === activeTicker.replace('.NS', '').replace('.BO', ''));
       if (match) {
-        setPrice(parseFloat(match.value.replace(/,/g, '')));
+        const val = typeof match.price === 'number' ? match.price : (match.value ? parseFloat(match.value.replace(/₹/g, '').replace(/,/g, '')) : parseFloat(match.price));
+        if (!isNaN(val) && val > 0) {
+          Promise.resolve().then(() => {
+            setLivePrice(val);
+            if (orderMode === 'Market') {
+              setPrice(val);
+            }
+          });
+        }
       }
     }
-  }, [socketData, activeTicker]);
+  }, [socketData, activeTicker, orderMode]);
 
   const fetchBalance = useCallback(async () => {
     if (!user) return;
@@ -148,7 +164,7 @@ export default function StockDetail() {
   }, [user]);
 
   useEffect(() => {
-    fetchBalance();
+    Promise.resolve().then(() => fetchBalance());
   }, [fetchBalance, isLiveMode]);
 
   useEffect(() => {
@@ -175,7 +191,7 @@ export default function StockDetail() {
         setInWatchlist(res.data.action === 'added');
         toast.success(res.data.action === 'added' ? 'Added to watchlist' : 'Removed from watchlist');
       }
-    } catch (err) {
+    } catch {
       toast.error('Failed to update watchlist');
     }
   };
@@ -231,31 +247,11 @@ export default function StockDetail() {
     }
   };
 
-  const currentPrice = data?.current_price || 0;
+  const currentPrice = livePrice || data?.current_price || 0;
   const previousPrice = historyData?.[historyData.length - 2]?.close || currentPrice;
   const dayChange = currentPrice - previousPrice;
   const dayChangePercent = previousPrice > 0 ? (dayChange / previousPrice) * 100 : 0;
   const isPositive = dayChange >= 0;
-
-  const CustomTooltip = ({ active, payload, label }) => {
-    if (active && payload && payload.length) {
-      return (
-        <div className="glass-panel p-3 border border-white/[0.08] shadow-2xl z-50">
-          <p className="text-zinc-500 text-[10px] mb-1.5 font-bold uppercase tracking-widest">{label}</p>
-          {payload.map((entry, index) => (
-            <div key={index} className="flex items-center gap-2 text-xs font-medium py-0.5">
-              <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || '#fff' }} />
-              <span className="text-zinc-400">{entry.name}:</span>
-              <span className="text-white font-bold font-mono-data">
-                {typeof entry.value === 'number' ? entry.value.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : entry.value}
-              </span>
-            </div>
-          ))}
-        </div>
-      );
-    }
-    return null;
-  };
 
   const filteredData = React.useMemo(() => {
     if (!historyData || historyData.length === 0) return [];
@@ -351,12 +347,9 @@ export default function StockDetail() {
       { date: lastPoint.date, prediction: lastPoint.price, isPrediction: true },
       ...futurePoints
     ];
-  }, [filteredData, data?.prediction]);
+  }, [filteredData, data]);
 
-  const handleDateChange = (type, val) => {
-    setDateRange(prev => ({ ...prev, [type]: val }));
-    setTimeRange('Custom');
-  };
+
 
   if (!user) {
      return <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -750,3 +743,23 @@ export default function StockDetail() {
     </div>
   );
 }
+
+const CustomTooltip = ({ active, payload, label }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div className="glass-panel p-3 border border-white/[0.08] shadow-2xl z-50 bg-[#060b18]/90">
+        <p className="text-zinc-500 text-[10px] mb-1.5 font-bold uppercase tracking-widest">{label}</p>
+        {payload.map((entry, index) => (
+          <div key={index} className="flex items-center gap-2 text-xs font-medium py-0.5">
+            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || '#fff' }} />
+            <span className="text-zinc-400">{entry.name}:</span>
+            <span className="text-white font-bold font-mono-data">
+              {typeof entry.value === 'number' ? entry.value.toLocaleString('en-IN', { maximumFractionDigits: 2 }) : entry.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};

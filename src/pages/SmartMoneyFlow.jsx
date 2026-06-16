@@ -7,34 +7,34 @@ import { AreaChart, Area, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, R
 
 const fadeUp = { hidden: { opacity: 0, y: 20 }, show: { opacity: 1, y: 0, transition: { duration: 0.5 } } };
 
+const CustomTooltip = ({ active, payload }) => {
+  if (active && payload && payload.length) {
+    const d = payload[0].payload;
+    return (
+      <div className="bg-[#0a0a12]/95 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl min-w-[200px]">
+        <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">{d.date}</p>
+        <div className="space-y-1.5">
+          <div className="flex justify-between"><span className="text-xs text-sky-400 font-bold">FII Net</span><span className={`text-xs font-black ${d.fii_net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>₹{d.fii_net?.toLocaleString()} Cr</span></div>
+          <div className="flex justify-between"><span className="text-xs text-amber-400 font-bold">DII Net</span><span className={`text-xs font-black ${d.dii_net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>₹{d.dii_net?.toLocaleString()} Cr</span></div>
+        </div>
+      </div>
+    );
+  }
+  return null;
+};
+
 export default function SmartMoneyFlow() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [period, setPeriod] = useState('1M');
 
   useEffect(() => {
-    setLoading(true);
+    Promise.resolve().then(() => setLoading(true));
     axios.get(`${API_BASE_URL}/api/smartmoney/flow?period=${period}`)
       .then(res => setData(res.data))
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [period]);
-
-  const CustomTooltip = ({ active, payload }) => {
-    if (active && payload && payload.length) {
-      const d = payload[0].payload;
-      return (
-        <div className="bg-[#0a0a12]/95 backdrop-blur-xl border border-white/10 p-4 rounded-2xl shadow-2xl min-w-[200px]">
-          <p className="text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2">{d.date}</p>
-          <div className="space-y-1.5">
-            <div className="flex justify-between"><span className="text-xs text-sky-400 font-bold">FII Net</span><span className={`text-xs font-black ${d.fii_net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>₹{d.fii_net?.toLocaleString()} Cr</span></div>
-            <div className="flex justify-between"><span className="text-xs text-amber-400 font-bold">DII Net</span><span className={`text-xs font-black ${d.dii_net >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>₹{d.dii_net?.toLocaleString()} Cr</span></div>
-          </div>
-        </div>
-      );
-    }
-    return null;
-  };
 
   if (loading) {
     return (

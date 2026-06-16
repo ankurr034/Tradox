@@ -47,7 +47,6 @@ vi.mock('../middleware/auth.js', () => ({
 describe('Queue Administration Router', () => {
   let mockReq;
   let mockRes;
-  let next;
 
   beforeEach(() => {
     mockReq = {
@@ -60,7 +59,6 @@ describe('Queue Administration Router', () => {
       status: vi.fn().mockReturnThis(),
       json: vi.fn()
     };
-    next = vi.fn();
     vi.clearAllMocks();
   });
 

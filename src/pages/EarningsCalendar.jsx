@@ -20,16 +20,16 @@ export default function EarningsCalendar() {
   const [filter, setFilter] = useState('ALL');
   const [expandedEntry, setExpandedEntry] = useState(null);
 
-  useEffect(() => { fetchEarnings(); }, [period]);
-
-  const fetchEarnings = async () => {
+  const fetchEarnings = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/earnings/calendar?period=${period}`);
       setData(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [period]);
+
+  useEffect(() => { fetchEarnings(); }, [fetchEarnings]);
 
   const filteredEntries = data?.entries?.filter(e => filter === 'ALL' || e.ai_prediction === filter) || [];
 

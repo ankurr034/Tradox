@@ -65,7 +65,6 @@ vi.mock('../middleware/auth.js', () => ({
 describe('AI Risk Coach Router', () => {
   let mockReq;
   let mockRes;
-  let next;
   let riskCoachRouter;
 
   beforeAll(async () => {
@@ -87,7 +86,6 @@ describe('AI Risk Coach Router', () => {
       status: vi.fn().mockReturnThis(),
       json: vi.fn()
     };
-    next = vi.fn();
     vi.clearAllMocks();
   });
 

@@ -33,7 +33,7 @@ export default function OrderBook() {
     } finally {
       setLoading(false);
     }
-  }, [user, activeFilter]);
+  }, [user, activeFilter, toast]);
 
   useEffect(() => {
     fetchOrders();
@@ -286,7 +286,7 @@ export default function OrderBook() {
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredGtt.map((gtt, i) => {
+                  {filteredGtt.map((gtt) => {
                     const sc = statusColors[gtt.status] || statusColors['ACTIVE'];
                     return (
                       <tr key={gtt.order_id} className="border-b border-white/[0.04] hover:bg-white/[0.02] transition-colors group">

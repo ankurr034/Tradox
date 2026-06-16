@@ -10,6 +10,12 @@ import {
 } from 'lucide-react';
 import GoogleSignInButton from '../components/GoogleSignInButton';
 
+const InputError = ({ error }) => error ? (
+  <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-[10px] text-red-400 font-bold mt-1.5 ml-1 flex items-center gap-1">
+    <AlertCircle size={10} /> {error}
+  </motion.p>
+) : null;
+
 export default function Register() {
   const [step, setStep] = useState(0);
   const [formData, setFormData] = useState({
@@ -94,7 +100,7 @@ export default function Register() {
   const handleSubmit = async (e) => {
     if (e) e.preventDefault();
     setLoading(true);
-    const { confirmPassword, ...submitData } = formData;
+    const { confirmPassword: _confirmPassword, ...submitData } = formData;
     const result = await register(submitData);
     setLoading(false);
 
@@ -113,11 +119,7 @@ export default function Register() {
     { title: 'Bank Linkage', sub: 'Settlement Setup', icon: <Building2 size={18} /> }
   ];
 
-  const InputError = ({ error }) => error ? (
-    <motion.p initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} className="text-[10px] text-red-400 font-bold mt-1.5 ml-1 flex items-center gap-1">
-      <AlertCircle size={10} /> {error}
-    </motion.p>
-  ) : null;
+
 
   return (
     <div className="flex items-center justify-center min-h-[85vh] py-10 relative overflow-hidden">

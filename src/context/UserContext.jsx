@@ -1,4 +1,5 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import axios from '../utils/axiosSetup';
 import { API_BASE_URL } from '../config';
 
@@ -10,28 +11,22 @@ export const UserProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isLiveMode, setIsLiveMode] = useState(localStorage.getItem('nexus_is_live') === 'true');
+  const [isLiveMode, setIsLiveMode] = useState(localStorage.getItem('tradox_is_live') === 'true');
   const [brokerConnected, setBrokerConnected] = useState(false);
 
-  useEffect(() => {
-    // Check for saved user ID in local storage
-    const savedUserId = localStorage.getItem('nexus_user_id');
-    if (savedUserId) {
-      fetchUserData(savedUserId);
-    } else {
-      setLoading(false);
-    }
-    
-    const handleBrokerExpired = () => {
-      console.log('[USER CONTEXT] Broker session completely expired. Disconnecting locally.');
-      setBrokerConnected(false);
-    };
-    
-    window.addEventListener('broker_session_expired', handleBrokerExpired);
-    return () => window.removeEventListener('broker_session_expired', handleBrokerExpired);
+  const logout = useCallback(() => {
+    localStorage.removeItem('tradox_user_id');
+    localStorage.removeItem('tradox_jwt');
+    localStorage.removeItem('tradox_is_live');
+    localStorage.removeItem('broker_access_token');
+    localStorage.removeItem('broker_refresh_token');
+    localStorage.removeItem('broker_expires_at');
+    setUser(null);
+    setProfile(null);
+    setIsLiveMode(false);
   }, []);
 
-  const fetchUserData = async (userId) => {
+  const fetchUserData = useCallback(async (userId) => {
     if (!userId) {
       setLoading(false);
       return;
@@ -41,17 +36,17 @@ export const UserProvider = ({ children }) => {
       setUser(res.data.user);
       setProfile(res.data.profile);
       
-      const isMockUser = res.data.user.id === 'mock_web2_user' || res.data.user.id === 'nexus-sim-user';
+      const isMockUser = res.data.user.id === 'mock_web2_user' || res.data.user.id === 'tradox-sim-user';
       let dbModeIsLive = res.data.user.account_mode === 'live';
       
       if (isMockUser) {
-        dbModeIsLive = localStorage.getItem('nexus_is_live') === 'true';
+        dbModeIsLive = localStorage.getItem('tradox_is_live') === 'true';
         res.data.user.account_mode = dbModeIsLive ? 'live' : 'demo';
         setUser(res.data.user);
       }
       
       setIsLiveMode(dbModeIsLive);
-      localStorage.setItem('nexus_is_live', String(dbModeIsLive));
+      localStorage.setItem('tradox_is_live', String(dbModeIsLive));
       
       // Rehydrate local broker state from valid tokens, else use backend status
       const localToken = localStorage.getItem('broker_access_token');
@@ -71,10 +66,10 @@ export const UserProvider = ({ children }) => {
       if (!err.response) {
         setUser({
           id: userId,
-          username: 'NexusUser',
-          email: 'user@nexus.ai',
+          username: 'TradoxUser',
+          email: 'user@tradox.ai',
           kyc_status: 'VERIFIED',
-          account_mode: localStorage.getItem('nexus_is_live') === 'true' ? 'live' : 'demo',
+          account_mode: localStorage.getItem('tradox_is_live') === 'true' ? 'live' : 'demo',
           isPremium: false,
           subscription_plan: 'Free'
         });
@@ -88,33 +83,51 @@ export const UserProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [logout]);
 
-  const login = async (username, password) => {
+  useEffect(() => {
+    // Check for saved user ID in local storage
+    const savedUserId = localStorage.getItem('tradox_user_id');
+    if (savedUserId) {
+      fetchUserData(savedUserId);
+    } else {
+      setLoading(false);
+    }
+    
+    const handleBrokerExpired = () => {
+      console.log('[USER CONTEXT] Broker session completely expired. Disconnecting locally.');
+      setBrokerConnected(false);
+    };
+    
+    window.addEventListener('broker_session_expired', handleBrokerExpired);
+    return () => window.removeEventListener('broker_session_expired', handleBrokerExpired);
+  }, [fetchUserData]);
+
+  const login = useCallback(async (username, password) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { username, password });
-      localStorage.setItem('nexus_user_id', res.data.user_id);
-      if (res.data.token) localStorage.setItem('nexus_jwt', res.data.token);
+      localStorage.setItem('tradox_user_id', res.data.user_id);
+      if (res.data.token) localStorage.setItem('tradox_jwt', res.data.token);
       await fetchUserData(res.data.user_id);
-      if (!localStorage.getItem('nexus_jwt')) {
+      if (!localStorage.getItem('tradox_jwt')) {
         return { success: false, error: 'Session initialization failed' };
       }
       return { success: true };
     } catch (err) {
       // Mock login for offline frontend simulation
       if (!err.response) {
-        const dummyId = 'nexus-sim-user';
-        localStorage.setItem('nexus_user_id', dummyId);
+        const dummyId = 'tradox-sim-user';
+        localStorage.setItem('tradox_user_id', dummyId);
         await fetchUserData(dummyId);
         return { success: true };
       }
       return { success: false, error: err.response?.data?.detail || `Login failed` };
     }
-  };
+  }, [fetchUserData]);
 
-  const loginWithWallet = async (token, userData) => {
-    localStorage.setItem('nexus_jwt', token);
-    localStorage.setItem('nexus_user_id', userData.walletAddress);
+  const loginWithWallet = useCallback(async (token, userData) => {
+    localStorage.setItem('tradox_jwt', token);
+    localStorage.setItem('tradox_user_id', userData.walletAddress);
     
     // Stub ENS resolution (can be replaced with ethers.js/wagmi lookup)
     const mockEns = null; 
@@ -137,31 +150,31 @@ export const UserProvider = ({ children }) => {
     });
     
     return { success: true };
-  };
+  }, [isLiveMode]);
 
-  const loginWithGoogle = async (credential) => {
+  const loginWithGoogle = useCallback(async (credential) => {
     try {
       const res = await axios.post(`${API_BASE_URL}/api/auth/google`, { credential });
-      localStorage.setItem('nexus_user_id', res.data.user_id);
-      if (res.data.token) localStorage.setItem('nexus_jwt', res.data.token);
+      localStorage.setItem('tradox_user_id', res.data.user_id);
+      if (res.data.token) localStorage.setItem('tradox_jwt', res.data.token);
       await fetchUserData(res.data.user_id);
-      if (!localStorage.getItem('nexus_jwt')) {
+      if (!localStorage.getItem('tradox_jwt')) {
         return { success: false, error: 'Failed to retrieve authenticated profile session' };
       }
       return { success: true };
     } catch (err) {
       // Mock Google login for offline frontend simulation when backend is down.
       if (!err.response) {
-        const dummyId = 'nexus-sim-user';
-        localStorage.setItem('nexus_user_id', dummyId);
+        const dummyId = 'tradox-sim-user';
+        localStorage.setItem('tradox_user_id', dummyId);
         await fetchUserData(dummyId);
         return { success: true };
       }
       return { success: false, error: err.response?.data?.detail || 'Google sign-in failed' };
     }
-  };
+  }, [fetchUserData]);
 
-  const register = async (userData) => {
+  const register = useCallback(async (userData) => {
     try {
       await axios.post(`${API_BASE_URL}/api/auth/register`, userData);
       return { success: true };
@@ -172,51 +185,40 @@ export const UserProvider = ({ children }) => {
       }
       return { success: false, error: err.response?.data?.detail || `Registration failed` };
     }
-  };
+  }, []);
 
-  const logout = () => {
-    localStorage.removeItem('nexus_user_id');
-    localStorage.removeItem('nexus_jwt');
-    localStorage.removeItem('nexus_is_live');
-    localStorage.removeItem('broker_access_token');
-    localStorage.removeItem('broker_refresh_token');
-    localStorage.removeItem('broker_expires_at');
-    setUser(null);
-    setProfile(null);
-    setIsLiveMode(false);
-  };
-
-  const toggleMode = async () => {
+  const toggleMode = useCallback(async () => {
+    if (!user) return { success: false, error: 'User not logged in' };
     const newMode = isLiveMode ? 'demo' : 'live';
     try {
       await axios.post(`${API_BASE_URL}/api/profile/update?user_id=${user.id}`, {
         account_mode: newMode
       });
       setIsLiveMode(!isLiveMode);
-      localStorage.setItem('nexus_is_live', String(!isLiveMode));
-      if (user) {
-        setUser({ ...user, account_mode: newMode });
-      }
+      localStorage.setItem('tradox_is_live', String(!isLiveMode));
+      setUser({ ...user, account_mode: newMode });
       window.dispatchEvent(new Event('broker_token_updated'));
       return { success: true };
     } catch (err) {
       console.warn('Backend failed to switch mode, falling back to local state:', err);
       // Mock toggle for offline frontend simulation or if DB times out
       setIsLiveMode(!isLiveMode);
-      localStorage.setItem('nexus_is_live', String(!isLiveMode));
-      if (user) {
-        setUser({ ...user, account_mode: newMode });
-      }
+      localStorage.setItem('tradox_is_live', String(!isLiveMode));
+      setUser({ ...user, account_mode: newMode });
       window.dispatchEvent(new Event('broker_token_updated'));
       return { success: true };
     }
-  };
+  }, [isLiveMode, user]);
 
-  const upgradeToPremium = (plan, expiry) => {
+  const upgradeToPremium = useCallback((plan, expiry) => {
     if (user) {
       setUser({ ...user, isPremium: true, subscription_plan: plan, premium_expiry: expiry });
     }
-  };
+  }, [user]);
+
+  const refreshUser = useCallback(() => {
+    if (user?.id) fetchUserData(user.id);
+  }, [user, fetchUserData]);
 
   const contextValue = useMemo(() => ({
     user, 
@@ -231,10 +233,22 @@ export const UserProvider = ({ children }) => {
     logout, 
     toggleMode,
     upgradeToPremium,
-    refreshUser: () => {
-      if (user?.id) fetchUserData(user.id);
-    }
-  }), [user, profile, loading, isLiveMode, brokerConnected]);
+    refreshUser
+  }), [
+    user, 
+    profile, 
+    loading, 
+    isLiveMode, 
+    brokerConnected, 
+    login, 
+    loginWithWallet, 
+    loginWithGoogle, 
+    register, 
+    logout, 
+    toggleMode, 
+    upgradeToPremium, 
+    refreshUser
+  ]);
 
   return (
     <UserContext.Provider value={contextValue}>

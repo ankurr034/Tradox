@@ -1,6 +1,7 @@
 import React, { Suspense, useEffect } from 'react';
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
+import { ThemeProvider } from './context/ThemeContext';
 
 function ScrollToTop() {
   const { pathname } = useLocation();
@@ -164,33 +165,35 @@ function AnimatedRoutes() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <ScrollToTop />
-      <UserProvider>
-        <ToastProvider>
-          <Web3Provider>
-            <SocketProvider>
-              <div className="min-h-screen bg-background relative text-zinc-100 noise-overlay">
-                {/* Ambient gradients — scaled for mobile */}
-                <div className="fixed top-0 left-1/4 w-[300px] sm:w-[500px] lg:w-[800px] h-[300px] sm:h-[500px] lg:h-[800px] bg-primary/[0.03] rounded-full blur-[100px] sm:blur-[150px] lg:blur-[200px] pointer-events-none" />
-                <div className="fixed bottom-0 right-1/4 w-[200px] sm:w-[400px] lg:w-[600px] h-[200px] sm:h-[400px] lg:h-[600px] bg-secondary/[0.03] rounded-full blur-[100px] sm:blur-[150px] lg:blur-[200px] pointer-events-none" />
+    <ThemeProvider>
+      <BrowserRouter>
+        <ScrollToTop />
+        <UserProvider>
+          <ToastProvider>
+            <Web3Provider>
+              <SocketProvider>
+                <div className="min-h-screen bg-background relative text-zinc-100 noise-overlay">
+                  {/* Ambient gradients — scaled for mobile */}
+                  <div className="fixed top-0 left-1/4 w-[300px] sm:w-[500px] lg:w-[800px] h-[300px] sm:h-[500px] lg:h-[800px] bg-primary/[0.03] rounded-full blur-[100px] sm:blur-[150px] lg:blur-[200px] pointer-events-none" />
+                  <div className="fixed bottom-0 right-1/4 w-[200px] sm:w-[400px] lg:w-[600px] h-[200px] sm:h-[400px] lg:h-[600px] bg-secondary/[0.03] rounded-full blur-[100px] sm:blur-[150px] lg:blur-[200px] pointer-events-none" />
 
-                <LiveTickerStrip />
-                <Navbar />
-                <CommandBar />
+                  <LiveTickerStrip />
+                  <Navbar />
+                  <CommandBar />
 
-                <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 relative z-10 min-h-[80vh]">
-                  <AnimatedRoutes />
-                </main>
+                  <main className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8 py-4 sm:py-6 lg:py-8 relative z-10 min-h-[80vh]">
+                    <AnimatedRoutes />
+                  </main>
 
-                <Footer />
-                <SmartAlerts />
-              </div>
-            </SocketProvider>
-          </Web3Provider>
-        </ToastProvider>
-      </UserProvider>
-    </BrowserRouter>
+                  <Footer />
+                  <SmartAlerts />
+                </div>
+              </SocketProvider>
+            </Web3Provider>
+          </ToastProvider>
+        </UserProvider>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }
 

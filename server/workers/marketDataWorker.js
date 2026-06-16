@@ -1,6 +1,5 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
-import { createClient } from 'redis';
 import { createLogger } from '../utils/logger.js';
 import MarketDataService from '../services/MarketDataService.js';
 
@@ -62,7 +61,9 @@ async function start() {
     try {
       await mongoose.disconnect();
       log.info('MongoDB connection closed.');
-    } catch {}
+    } catch {
+      // ignore
+    }
     process.exit(0);
   };
 

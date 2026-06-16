@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Command, Zap, ArrowRight, TrendingUp, Wallet, Shield, User, Globe, Calculator, X } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useUser } from '../context/UserContext';
-import { useToast } from './Toast';
 
 export default function CommandBar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -11,7 +10,6 @@ export default function CommandBar() {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const { isLiveMode, toggleMode } = useUser();
   const navigate = useNavigate();
-  const toast = useToast();
   const inputRef = useRef(null);
 
   const actions = [
@@ -41,8 +39,10 @@ export default function CommandBar() {
 
   useEffect(() => {
     if (isOpen) {
-      setQuery('');
-      setSelectedIndex(0);
+      Promise.resolve().then(() => {
+        setQuery('');
+        setSelectedIndex(0);
+      });
       setTimeout(() => inputRef.current?.focus(), 100);
     }
   }, [isOpen]);
@@ -139,9 +139,9 @@ export default function CommandBar() {
             <div className="bg-white/[0.02] px-6 py-3 border-t border-white/[0.08] flex items-center justify-between">
                <div className="flex items-center gap-4 text-[10px] font-black text-zinc-600 uppercase tracking-widest">
                   <span className="flex items-center gap-1.5"><Command size={12} /> Search Alpha</span>
-                  <span className="flex items-center gap-1.5"><Zap size={12} /> AI Nexus</span>
+                  <span className="flex items-center gap-1.5"><Zap size={12} /> AI Tradox</span>
                </div>
-               <p className="text-[9px] font-bold text-zinc-700 italic">Nexus AI v2.4.0 • Enterprise Core</p>
+               <p className="text-[9px] font-bold text-zinc-700 italic">Tradox v2.4.0 • Enterprise Core</p>
             </div>
           </motion.div>
         </div>

@@ -1,24 +1,119 @@
 @import "tailwindcss";
 
+:root {
+  /* ── Tradox Brand Tokens ── */
+  --brand-name:       "Tradox";
+  --brand-initials:   "TX";
+  --brand-tagline:    "Trade. Grow. Dominate.";
+  --brand-primary:    #E53E3E;
+  --brand-dark:       #111111;
+  --brand-gold:       #D4A017;
+  --brand-white:      #F5F5F5;
+
+  --background: #0a0a0a;
+  --surface: #111111;
+  --surface-highlight: #1a1a1a;
+  --primary: #E53E3E;
+  --primary-dim: rgba(229, 62, 62, 0.08);
+  --secondary: #3b82f6;
+  --accent: #D4A017;
+  --danger: #E53E3E;
+  --success: #00D09C;
+
+  --emerald-400: #00D09C;
+  --emerald-500: #00b386;
+  --red-400: #E53E3E;
+  --red-500: #c53030;
+
+  --zinc-900: #111111;
+  --zinc-800: #1a1a1a;
+  --zinc-700: #27272a;
+  --zinc-600: #3f3f46;
+  --zinc-500: #71717a;
+  --zinc-400: #a1a1aa;
+  --zinc-300: #d4d4d8;
+  --zinc-200: #e4e4e7;
+  --zinc-100: #f4f4f5;
+  --zinc-50: #fafafa;
+
+  --black-color: #0a0a0a;
+  --white-color: #ffffff;
+  --text-main: #e4e4e7;
+  --text-muted: #a1a1aa;
+  --scrollbar-thumb: #ffffff15;
+  --border-color: rgba(255, 255, 255, 0.08);
+  --border-color-hover: rgba(255, 255, 255, 0.15);
+  --glass-card-bg: rgba(17, 17, 17, 0.7);
+  --noise-opacity: 0.015;
+}
+
+:root.light {
+  --background: #f8fafc;
+  --surface: #ffffff;
+  --surface-highlight: #f1f5f9;
+  --primary: #E53E3E;
+  --primary-dim: rgba(229, 62, 62, 0.08);
+  --secondary: #2563eb;
+  --accent: #d97706;
+  --danger: #dc2626;
+  --success: #00b386;
+
+  --emerald-400: #00b386;
+  --emerald-500: #059669;
+  --red-400: #ef4444;
+  --red-500: #dc2626;
+
+  /* Invert zinc shades for Light Mode */
+  --zinc-900: #f8fafc;
+  --zinc-800: #f1f5f9;
+  --zinc-700: #e2e8f0;
+  --zinc-600: #cbd5e1;
+  --zinc-500: #94a3b8;
+  --zinc-400: #64748b;
+  --zinc-300: #475569;
+  --zinc-200: #334155;
+  --zinc-100: #1e293b;
+  --zinc-50: #0f172a;
+
+  --black-color: #ffffff;
+  --white-color: #0f172a;
+  --text-main: #1e293b;
+  --text-muted: #64748b;
+  --scrollbar-thumb: #00000015;
+  --border-color: rgba(0, 0, 0, 0.08);
+  --border-color-hover: rgba(0, 0, 0, 0.15);
+  --glass-card-bg: rgba(255, 255, 255, 0.7);
+  --noise-opacity: 0.005;
+}
+
 @theme {
-  --color-background: #0a0a0a;
-  --color-surface: #111111;
-  --color-surface-highlight: #1a1a1a;
-  --color-primary: #00D09C;
-  --color-primary-dim: #00d09c15;
-  --color-secondary: #3b82f6;
-  --color-accent: #f59e0b;
-  --color-danger: #EB5B3C;
-  --color-success: #00D09C;
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-highlight: var(--surface-highlight);
+  --color-primary: var(--primary);
+  --color-primary-dim: var(--primary-dim);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
   
   /* OVERRIDES TO FORCE PREMIUM DESIGN ACROSS ALL FILES */
-  --color-emerald-400: #00D09C;
-  --color-emerald-500: #00b386;
-  --color-red-400: #EB5B3C;
-  --color-red-500: #d6492b;
-  --color-zinc-900: #111111;
-  --color-zinc-800: #1a1a1a;
-  --color-black: #0a0a0a;
+  --color-emerald-400: var(--emerald-400);
+  --color-emerald-500: var(--emerald-500);
+  --color-red-400: var(--red-400);
+  --color-red-500: var(--red-500);
+  --color-zinc-900: var(--zinc-900);
+  --color-zinc-800: var(--zinc-800);
+  --color-zinc-700: var(--zinc-700);
+  --color-zinc-600: var(--zinc-600);
+  --color-zinc-500: var(--zinc-500);
+  --color-zinc-400: var(--zinc-400);
+  --color-zinc-300: var(--zinc-300);
+  --color-zinc-200: var(--zinc-200);
+  --color-zinc-100: var(--zinc-100);
+  --color-zinc-50: var(--zinc-50);
+  --color-black: var(--black-color);
+  --color-white: var(--white-color);
 
   --font-family-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --font-family-mono: 'JetBrains Mono', monospace;
@@ -27,12 +122,12 @@
 @layer base {
   * {
     scrollbar-width: thin;
-    scrollbar-color: #ffffff15 transparent;
+    scrollbar-color: var(--scrollbar-thumb) transparent;
   }
 
   body {
     background-color: var(--color-background);
-    color: #e4e4e7;
+    color: var(--text-main);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     margin: 0;
@@ -52,21 +147,21 @@
    ═══════════════════════════════════════════════════════════ */
 .glass-panel {
   background-color: var(--color-surface);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 .glass-panel-hover {
   background-color: var(--color-surface);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
   transition: all 0.2s ease;
 }
 
 .glass-card {
-  background-color: rgba(17, 17, 17, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background-color: var(--glass-card-bg);
+  border: 1px solid var(--border-color);
   border-radius: 24px;
   box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
   backdrop-filter: blur(16px);
@@ -74,7 +169,7 @@
 }
 
 .glass-panel-hover:hover {
-  border-color: rgba(255, 255, 255, 0.15);
+  border-color: var(--border-color-hover);
   transform: translateY(-1px);
 }
 
@@ -179,7 +274,7 @@
    GRADIENT TEXT
    ═══════════════════════════════════════════════════════════ */
 .text-gradient {
-  background: linear-gradient(135deg, #00d4aa, #6366f1);
+  background: linear-gradient(135deg, #E53E3E, #D4A017);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -199,7 +294,7 @@
   content: '';
   position: fixed;
   inset: 0;
-  opacity: 0.015;
+  opacity: var(--noise-opacity);
   pointer-events: none;
   z-index: 50;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");

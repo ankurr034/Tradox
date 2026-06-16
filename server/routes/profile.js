@@ -13,7 +13,7 @@ router.post('/update', async (req, res) => {
   }
 
   // If it's a mock user from frontend, skip DB query and return success
-  if (user_id === 'mock_web2_user' || user_id === 'nexus-sim-user') {
+  if (user_id === 'mock_web2_user' || user_id === 'tradox-sim-user') {
     return res.json({ success: true, account_mode, message: 'Mock update successful' });
   }
 

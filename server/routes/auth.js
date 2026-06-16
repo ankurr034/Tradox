@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { OAuth2Client } from 'google-auth-library';
-import { JWT_SECRET, isProd } from '../utils/secrets.js';
+import { JWT_SECRET } from '../utils/secrets.js';
 
 const router = express.Router();
 
@@ -161,7 +161,7 @@ router.post('/refresh-token', async (req, res) => {
     let decoded;
     try {
       decoded = jwt.verify(refresh_token, JWT_SECRET, { algorithms: ['HS256'] });
-    } catch (err) {
+    } catch {
       return res.status(401).json({ detail: 'Invalid refresh token' });
     }
 

@@ -96,7 +96,7 @@ export default function AICopilot() {
         blockHash
       };
       setMessages(prev => [...prev, aiMsg]);
-    } catch (err) {
+    } catch {
       setMessages(prev => [...prev, {
         role: 'assistant',
         title: '⚠️ Error',

@@ -15,23 +15,23 @@ export default function OptionsBuilder() {
   const [analyzing, setAnalyzing] = useState(false);
   const [chainView, setChainView] = useState('both'); // calls, puts, both
 
-  useEffect(() => { fetchChain(); fetchTemplates(); }, [symbol]);
-
-  const fetchChain = async () => {
+  const fetchChain = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/options/chain/${symbol}`);
       setChain(res.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [symbol]);
 
-  const fetchTemplates = async () => {
+  const fetchTemplates = React.useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/options/strategies/templates`);
       setTemplates(res.data.templates);
     } catch (e) { console.error(e); }
-  };
+  }, []);
+
+  useEffect(() => { fetchChain(); fetchTemplates(); }, [fetchChain, fetchTemplates]);
 
   const addLeg = (type, strike, premium, position) => {
     setLegs(prev => [...prev, { option_type: type, strike, premium, position, quantity: 1 }]);

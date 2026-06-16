@@ -1,6 +1,5 @@
 import React from 'react';
-import { useGoogleLogin, hasGrantedAllScopesGoogle } from '@react-oauth/google';
-import axios from 'axios';
+import { useGoogleLogin } from '@react-oauth/google';
 import { useUser } from '../context/UserContext';
 import { useToast } from './Toast';
 import { API_BASE_URL } from '../config';

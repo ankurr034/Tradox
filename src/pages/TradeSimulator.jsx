@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
 import { Shield, PlayCircle, BarChart2, Activity, Zap, Server, StopCircle, RefreshCw } from 'lucide-react';
 import axios from 'axios';
 import { useUser } from '../context/UserContext';

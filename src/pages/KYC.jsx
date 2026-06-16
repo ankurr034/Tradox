@@ -126,7 +126,7 @@ export default function KYC() {
       toast.success('KYC Verified! You are now authorized for live trading.');
       refreshUser();
       setCurrentStep('SUCCESS');
-    } catch (e) { toast.error('Final Submission Failed'); }
+    } catch { toast.error('Final Submission Failed'); }
     finally { setLoading(false); }
   };
 

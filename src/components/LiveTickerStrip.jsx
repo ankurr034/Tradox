@@ -1,6 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { API_BASE_URL } from '../config';
 import useSocket from '../hooks/useSocket';
 import useMarketSession from '../hooks/useMarketSession';
 
@@ -34,7 +32,7 @@ export default function LiveTickerStrip() {
     if (socketUpdates && socketUpdates.length > 0) {
       const filtered = socketUpdates.filter(item => ALLOWED_TICKERS.includes(item.symbol));
       if (filtered.length > 0) {
-        setTickerData(filtered);
+        Promise.resolve().then(() => setTickerData(filtered));
       }
     }
   }, [socketUpdates]);

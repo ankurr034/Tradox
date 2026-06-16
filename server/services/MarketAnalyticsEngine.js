@@ -1,4 +1,4 @@
-import { INDEX_CONSTITUENTS, getIndexSymbols } from '../data/indexConstituents.js';
+import { INDEX_CONSTITUENTS } from '../data/indexConstituents.js';
 import MarketDataService from './MarketDataService.js';
 
 // ═══════════════════════════════════════════════════════════
@@ -26,7 +26,7 @@ export default class MarketAnalyticsEngine {
 
     // Build a map of symbol -> { name, sector, weight }
     this.symbolRegistry = {};
-    for (const [indexKey, indexDef] of Object.entries(INDEX_CONSTITUENTS)) {
+    for (const [, indexDef] of Object.entries(INDEX_CONSTITUENTS)) {
       for (const [sectorName, stocks] of Object.entries(indexDef.sectors)) {
         for (const stock of stocks) {
           if (!this.symbolRegistry[stock.symbol]) {

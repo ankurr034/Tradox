@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TrendingUp, Calculator, CheckCircle2, Star, Shield, Sparkles, X, ChevronRight, HelpCircle, Layers, ArrowUpRight } from 'lucide-react';
 import axios from 'axios';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
+import { useToast } from '../components/Toast';
 import { API_BASE_URL } from '../config';
 
 const CATEGORIES = [
@@ -10,7 +11,8 @@ const CATEGORIES = [
   { id: 'Equity', label: 'High Return (Equity)' },
   { id: 'Debt', label: 'Low Risk (Debt)' },
   { id: 'Hybrid', label: 'Balanced (Hybrid)' },
-  { id: 'Index', label: 'Low Cost (Index)' }
+  { id: 'Index', label: 'Low Cost (Index)' },
+  { id: 'ELSS', label: 'Tax Saver (ELSS)' }
 ];
 
 export default function MutualFunds() {
@@ -27,11 +29,34 @@ export default function MutualFunds() {
   const [loading, setLoading] = useState(true);
   const [selectedFund, setSelectedFund] = useState(null);
 
+  // Investment states
+  const toast = useToast();
+  const [investType, setInvestType] = useState(null); // 'sip' | 'lumpsum' | null
+  const [investAmount, setInvestAmount] = useState(500);
+  const [sipDate, setSipDate] = useState(5);
+  const [investing, setInvesting] = useState(false);
+
+  useEffect(() => {
+    if (selectedFund) {
+      setInvestType(null);
+      setInvestAmount(selectedFund.minSip || 500);
+      setSipDate(5);
+    }
+  }, [selectedFund]);
+
   useEffect(() => {
     const fetchFunds = async () => {
       try {
         const res = await axios.get(`${API_BASE_URL}/api/mutual-funds`);
-        setFunds(res.data.funds || []);
+        const mapped = (res.data.funds || []).map(fund => ({
+          ...fund,
+          returns1Y: fund.returns_1y != null ? `${fund.returns_1y}%` : 'N/A',
+          returns3Y: fund.returns_3y != null ? `${fund.returns_3y}%` : 'N/A',
+          returns5Y: fund.returns_5y != null ? `${fund.returns_5y}%` : 'N/A',
+          minSip: fund.min_sip || 500,
+          color: fund.category === 'Equity' ? '#10b981' : fund.category === 'Debt' ? '#3b82f6' : fund.category === 'Hybrid' ? '#f59e0b' : '#8b5cf6'
+        }));
+        setFunds(mapped);
       } catch (e) {
         console.error("Failed to fetch mutual funds", e);
       } finally {
@@ -452,34 +477,134 @@ export default function MutualFunds() {
                   </div>
                 </div>
 
-                <div className="space-y-4">
-                  <h4 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
-                    <Shield className="w-4 h-4 text-primary" /> Investor Protection & Safety
-                  </h4>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
-                      <ChevronRight className="w-3.5 h-3.5 text-primary" /> Verified SEBI Registered
+                {investType === null ? (
+                  <>
+                    <div className="space-y-4">
+                      <h4 className="text-sm font-black text-white uppercase tracking-widest flex items-center gap-2">
+                        <Shield className="w-4 h-4 text-primary" /> Investor Protection & Safety
+                      </h4>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
+                          <ChevronRight className="w-3.5 h-3.5 text-primary" /> Verified SEBI Registered
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
+                          <ChevronRight className="w-3.5 h-3.5 text-primary" /> Zero Commission Direct Plan
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
+                          <ChevronRight className="w-3.5 h-3.5 text-primary" /> Instant Redemption Available
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
+                          <ChevronRight className="w-3.5 h-3.5 text-primary" /> Multi-Layer Fund AI Analysis
+                        </div>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
-                      <ChevronRight className="w-3.5 h-3.5 text-primary" /> Zero Commission Direct Plan
+
+                    <div className="pt-4 flex gap-4">
+                      <button
+                        onClick={() => {
+                          setInvestType('sip');
+                          setInvestAmount(selectedFund.minSip);
+                        }}
+                        className="flex-1 py-4 bg-primary text-black font-black uppercase tracking-widest rounded-2xl hover:shadow-[0_0_30px_rgba(0,212,170,0.3)] transition-all cursor-pointer"
+                      >
+                        Start Monthly SIP
+                      </button>
+                      <button
+                        onClick={() => {
+                          setInvestType('lumpsum');
+                          setInvestAmount(selectedFund.minSip * 5);
+                        }}
+                        className="flex-1 py-4 bg-white/[0.04] border border-white/10 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.08] transition-all cursor-pointer"
+                      >
+                        One-time Lumpsum
+                      </button>
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
-                      <ChevronRight className="w-3.5 h-3.5 text-primary" /> Instant Redemption Available
+                  </>
+                ) : (
+                  <div className="space-y-6 bg-white/[0.02] border border-white/[0.06] rounded-2xl p-6">
+                    <h4 className="text-sm font-black text-white uppercase tracking-wider flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-primary" /> 
+                      {investType === 'sip' ? 'Setup Monthly SIP' : 'One-time Lumpsum Investment'}
+                    </h4>
+
+                    <div className="space-y-4">
+                      <div>
+                        <div className="flex justify-between items-center text-xs font-semibold text-zinc-400 mb-2">
+                          <span>Investment Amount</span>
+                          <span className="text-xs text-zinc-500 font-bold">(Min: ₹{selectedFund.minSip})</span>
+                        </div>
+                        <div className="relative">
+                          <span className="absolute left-4 top-1/2 -translate-y-1/2 text-white font-bold text-lg">₹</span>
+                          <input
+                            type="number"
+                            min={selectedFund.minSip}
+                            value={investAmount}
+                            onChange={(e) => setInvestAmount(Math.max(0, Number(e.target.value)))}
+                            className="w-full bg-[#0a0a0f] border border-white/[0.06] rounded-xl py-3 pl-8 pr-4 text-white text-lg font-black focus:outline-none focus:border-primary/30"
+                          />
+                        </div>
+                      </div>
+
+                      {investType === 'sip' && (
+                        <div>
+                          <label className="text-xs font-semibold text-zinc-400 mb-2 block">Monthly SIP Installment Date</label>
+                          <select
+                            value={sipDate}
+                            onChange={(e) => setSipDate(Number(e.target.value))}
+                            className="w-full bg-[#0a0a0f] border border-white/[0.06] rounded-xl py-3 px-4 text-white text-sm focus:outline-none focus:border-primary/30 font-bold"
+                          >
+                            <option value={1}>1st of every month</option>
+                            <option value={5}>5th of every month</option>
+                            <option value={10}>10th of every month</option>
+                            <option value={15}>15th of every month</option>
+                            <option value={20}>20th of every month</option>
+                            <option value={25}>25th of every month</option>
+                          </select>
+                        </div>
+                      )}
                     </div>
-                    <div className="flex items-center gap-3 text-xs text-zinc-400 bg-white/[0.02] p-3 rounded-xl">
-                      <ChevronRight className="w-3.5 h-3.5 text-primary" /> Multi-Layer Fund AI Analysis
+
+                    <div className="flex gap-4 pt-2">
+                      <button
+                        onClick={() => setInvestType(null)}
+                        className="flex-1 py-3 bg-white/[0.04] border border-white/10 text-white font-black text-xs uppercase tracking-widest rounded-xl hover:bg-white/[0.08] transition-all cursor-pointer"
+                      >
+                        Back
+                      </button>
+                      <button
+                        onClick={async () => {
+                          if (investAmount < selectedFund.minSip) {
+                            toast.error(`Minimum investment amount is ₹${selectedFund.minSip}`);
+                            return;
+                          }
+                          setInvesting(true);
+                          try {
+                            const res = await axios.post(`${API_BASE_URL}/api/mutual-funds/invest`, {
+                              fund_name: selectedFund.name,
+                              amount: investAmount,
+                              type: investType,
+                              sip_date: investType === 'sip' ? sipDate : undefined
+                            });
+                            if (res.data.success) {
+                              toast.success(res.data.message);
+                              setSelectedFund(null);
+                            } else {
+                              toast.error(res.data.detail || 'Investment failed');
+                            }
+                          } catch (err) {
+                            toast.error(err.response?.data?.detail || 'Investment failed');
+                          } finally {
+                            setInvesting(false);
+                          }
+                        }}
+                        disabled={investing}
+                        className="flex-1 py-3 bg-primary text-black font-black text-xs uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_rgba(0,212,170,0.3)] transition-all disabled:opacity-50 cursor-pointer"
+                      >
+                        {investing ? 'Processing...' : 'Confirm'}
+                      </button>
                     </div>
                   </div>
-                </div>
-
-                <div className="pt-4 flex gap-4">
-                  <button className="flex-1 py-4 bg-primary text-black font-black uppercase tracking-widest rounded-2xl hover:shadow-[0_0_30px_rgba(0,212,170,0.3)] transition-all cursor-pointer">
-                    Start Monthly SIP
-                  </button>
-                  <button className="flex-1 py-4 bg-white/[0.04] border border-white/10 text-white font-black uppercase tracking-widest rounded-2xl hover:bg-white/[0.08] transition-all cursor-pointer">
-                    One-time Lumpsum
-                  </button>
-                </div>
+                )}
               </div>
             </motion.div>
           </div>

@@ -4,7 +4,6 @@ import { Radio, TrendingUp, TrendingDown, Flame, MessageCircle, Heart, Search, A
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import axios from 'axios';
 import { API_BASE_URL } from '../config';
-import { useNavigate } from 'react-router-dom';
 
 const TREND_CONFIG = {
   SURGING: { color: '#10b981', bg: 'bg-emerald-500/10', border: 'border-emerald-500/20', label: '🔥 SURGING' },
@@ -14,7 +13,6 @@ const TREND_CONFIG = {
 };
 
 export default function SentimentRadar() {
-  const navigate = useNavigate();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedSymbol, setSelectedSymbol] = useState('');

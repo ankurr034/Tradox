@@ -11,7 +11,7 @@ import { Server } from 'socket.io';
 import helmet from 'helmet';
 import mongoSanitize from 'express-mongo-sanitize';
 import rateLimit from 'express-rate-limit';
-import logger, { createLogger } from './utils/logger.js';
+import { createLogger } from './utils/logger.js';
 import { trackMetricsMiddleware, getPrometheusMetrics, incrementActiveWebsockets, decrementActiveWebsockets, incrementSocketReconnect } from './middleware/metrics.js';
 import { cacheEndpoint, isRedisReady } from './middleware/cache.js';
 import * as Sentry from '@sentry/node';
@@ -74,7 +74,7 @@ const corsOriginChecker = (origin, callback) => {
 
 const log = createLogger('Server');
 const wsLog = createLogger('WebSocket');
-const mktLog = createLogger('MarketData');
+const _mktLog = createLogger('MarketData');
 
 // ═══════════════════════════════════════════════════════════
 //  Startup Environment Validation
@@ -554,7 +554,7 @@ io.use(async (socket, next) => {
 
     socket.user = decoded;
     next();
-  } catch (err) {
+  } catch {
     return next(new Error('Authentication error: Invalid or expired token'));
   }
 });
@@ -832,7 +832,7 @@ if (typeof Sentry.setupExpressErrorHandler === 'function') {
 // ═══════════════════════════════════════════════════════════
 //  GLOBAL ERROR HANDLER
 // ═══════════════════════════════════════════════════════════
-app.use((err, req, res, next) => {
+app.use((err, req, res, _next) => {
   log.error('Unhandled Express Error', { method: req.method, url: req.originalUrl, error: err.message, stack: err.stack });
   res.status(500).json({ error: 'Internal Server Error', detail: process.env.NODE_ENV === 'production' ? 'An unexpected error occurred' : err.message });
 });

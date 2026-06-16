@@ -174,8 +174,8 @@ router.get('/gtt/list', async (req, res) => {
 //  POST /api/gtt/cancel — Cancel a GTT trigger
 // ═══════════════════════════════════════════════════════════
 router.post('/gtt/cancel', async (req, res) => {
+  const { order_id, user_id } = req.body;
   try {
-    const { order_id, user_id } = req.body;
     if (!order_id) return res.status(400).json({ detail: 'order_id required' });
     const activeUser = req.query.user_id || req.body.user_id || user_id;
 
@@ -191,7 +191,7 @@ router.post('/gtt/cancel', async (req, res) => {
       order.rejectReason = 'GTT cancelled by user';
       await order.save();
       return res.json({ success: true, message: `GTT order ${order_id} cancelled` });
-    } catch (fallbackErr) {
+    } catch {
       res.status(500).json({ detail: err.message });
     }
   }

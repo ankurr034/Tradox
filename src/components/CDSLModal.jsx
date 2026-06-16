@@ -20,26 +20,7 @@ export default function CDSLModal({ isOpen, onClose, onAuthorized, stockSymbol, 
   const [hashingEffect, setHashingEffect] = useState(false);
   const otpRefs = useRef([]);
 
-  useEffect(() => {
-    if (isOpen && user) {
-      setStep(0);
-      setTpin('');
-      setOtp(['', '', '', '', '', '']);
-      setAuthData(null);
-      setOtpTimer(120);
-      fetchDematInfo();
-    }
-  }, [isOpen, user]);
-
-  useEffect(() => {
-    let interval;
-    if (step === 2 && otpTimer > 0) {
-      interval = setInterval(() => setOtpTimer(prev => prev - 1), 1000);
-    }
-    return () => clearInterval(interval);
-  }, [step, otpTimer]);
-
-  const fetchDematInfo = async () => {
+  const fetchDematInfo = React.useCallback(async () => {
     if (!user) return;
     try {
       const res = await axios.get(`${API_BASE_URL}/api/cdsl/demat-info?user_id=${user.id}`);
@@ -49,7 +30,28 @@ export default function CDSLModal({ isOpen, onClose, onAuthorized, stockSymbol, 
     } catch (e) {
       console.error('Demat fetch err', e);
     }
-  };
+  }, [user, stockSymbol]);
+
+  useEffect(() => {
+    if (isOpen && user) {
+      Promise.resolve().then(() => {
+        setStep(0);
+        setTpin('');
+        setOtp(['', '', '', '', '', '']);
+        setAuthData(null);
+        setOtpTimer(120);
+        fetchDematInfo();
+      });
+    }
+  }, [isOpen, user, fetchDematInfo]);
+
+  useEffect(() => {
+    let interval;
+    if (step === 2 && otpTimer > 0) {
+      interval = setInterval(() => setOtpTimer(prev => prev - 1), 1000);
+    }
+    return () => clearInterval(interval);
+  }, [step, otpTimer]);
 
   const handleVerifyTPIN = async () => {
     if (tpin.length < 6 || !user) return;

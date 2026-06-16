@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState, useRef } from 'react';
 import { io } from 'socket.io-client';
 import { API_BASE_URL } from '../config';
@@ -21,7 +22,7 @@ export const SocketProvider = ({ children }) => {
     
     const connectSocket = () => {
       const token = localStorage.getItem('broker_access_token');
-      const userToken = localStorage.getItem('nexus_jwt');
+      const userToken = localStorage.getItem('tradox_jwt');
       const socketInstance = io(API_BASE_URL || 'http://localhost:8000', {
         transports: ['websocket'],
         reconnection: false, // We'll handle custom exponential backoff

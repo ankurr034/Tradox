@@ -1,6 +1,6 @@
-# NexusAI
+# Tradox
 
-NexusAI is an AI-powered stock prediction and market analysis platform built with React, Vite, and Tailwind CSS. It delivers real-time insights, smart forecasting, interactive visualizations, and data-driven investment analytics in a modern web experience.
+Tradox is an AI-powered stock prediction and market analysis platform built with React, Vite, and Tailwind CSS. It delivers real-time insights, smart forecasting, interactive visualizations, and data-driven investment analytics in a modern web experience.
 
 ## Key Features
 

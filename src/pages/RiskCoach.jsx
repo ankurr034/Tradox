@@ -8,7 +8,7 @@ import { API_BASE_URL } from '../config';
 
 class ErrorBoundary extends React.Component {
   constructor(props) { super(props); this.state = { hasError: false }; }
-  static getDerivedStateFromError(error) { return { hasError: true }; }
+  static getDerivedStateFromError(_error) { return { hasError: true }; }
   render() {
     if (this.state.hasError) {
       return (
@@ -39,7 +39,7 @@ export default function RiskCoach() {
   const [sendingMsg, setSendingMsg] = useState(false);
   const chatEndRef = useRef(null);
 
-  const fetchRiskReport = async () => {
+  const fetchRiskReport = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/portfolio/risk-coach?user_id=${user?.id || 'nexus-sim-user'}`);
@@ -51,11 +51,11 @@ export default function RiskCoach() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   useEffect(() => {
     fetchRiskReport();
-  }, [user]);
+  }, [fetchRiskReport]);
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -85,7 +85,7 @@ export default function RiskCoach() {
         confidence: coachResponse.confidence
       };
       setChatMessages(prev => [...prev, coachMsg]);
-    } catch (err) {
+    } catch {
       setChatMessages(prev => [...prev, {
         role: 'assistant',
         title: '⚠️ Advisory Error',

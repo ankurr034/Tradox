@@ -18,7 +18,6 @@ export default function SmartAlerts() {
   const { user } = useUser();
   const toast = useToast();
   const [alerts, setAlerts] = useState([]);
-  const [loading, setLoading] = useState(true);
   const [showCreate, setShowCreate] = useState(false);
   const [symbol, setSymbol] = useState('');
   const [condition, setCondition] = useState('CROSSES_ABOVE');
@@ -27,15 +26,14 @@ export default function SmartAlerts() {
   const [aiSuggestions, setAiSuggestions] = useState(null);
   const [suggestLoading, setSuggestLoading] = useState(false);
 
-  useEffect(() => { fetchAlerts(); }, []);
-
-  const fetchAlerts = async () => {
+  const fetchAlerts = React.useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/alerts?user_id=${user?.id || 1}`);
       setAlerts(res.data.alerts);
     } catch (e) { console.error(e); }
-    finally { setLoading(false); }
-  };
+  }, [user]);
+
+  useEffect(() => { fetchAlerts(); }, [fetchAlerts]);
 
   const createAlert = async () => {
     if (!symbol || !targetPrice) return toast.error('Please fill symbol and price');
@@ -47,7 +45,7 @@ export default function SmartAlerts() {
       setShowCreate(false);
       setSymbol(''); setTargetPrice(''); setNote('');
       fetchAlerts();
-    } catch (e) { toast.error('Failed to create alert'); }
+    } catch { toast.error('Failed to create alert'); }
   };
 
   const deleteAlert = async (id) => {
@@ -55,7 +53,7 @@ export default function SmartAlerts() {
       await axios.delete(`${API_BASE_URL}/api/alerts/${id}?user_id=${user?.id || 1}`);
       setAlerts(prev => prev.filter(a => a.id !== id));
       toast.success('Alert deleted');
-    } catch (e) { toast.error('Failed'); }
+    } catch { toast.error('Failed'); }
   };
 
   const fetchAISuggestions = async () => {
@@ -64,7 +62,7 @@ export default function SmartAlerts() {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/alerts/ai-suggest/${symbol}`);
       setAiSuggestions(res.data);
-    } catch (e) { toast.error('Failed to get suggestions'); }
+    } catch { toast.error('Failed to get suggestions'); }
     finally { setSuggestLoading(false); }
   };
 

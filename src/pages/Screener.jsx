@@ -23,7 +23,7 @@ export default function Screener() {
 
   const sectors = ['ALL', 'FINANCIALS', 'IT', 'ENERGY', 'FMCG', 'HEALTHCARE', 'AUTO', 'METALS'];
 
-  const fetchStocks = async () => {
+  const fetchStocks = React.useCallback(async () => {
     setLoading(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/api/screener/scan`, { params: filters });
@@ -34,14 +34,14 @@ export default function Screener() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
       fetchStocks();
     }, 300);
     return () => clearTimeout(handler);
-  }, [filters]);
+  }, [fetchStocks]);
 
   const displayedStocks = useMemo(() => {
     if (alphaFilterActive) {

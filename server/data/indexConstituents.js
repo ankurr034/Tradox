@@ -420,7 +420,7 @@ export function generateFallbackPrices() {
     INDUSTOWER: 340.00, CONCOR: 820.00, GMRINFRA: 85.00, INDHOTEL: 620.00,
     UPL: 480.00, NAUKRI: 5800.00, OFSS: 9500.00, TATACOMM: 1750.00, DIXON: 5600.00,
     // Other commonly tracked
-    ZOMATO: 165.20, TATAMTRDVR: 780.00,
+    ZOMATO: 165.20, TATAMTRDVR: 780.00, IDEA: 13.50,
   };
   return FALLBACK_MAP;
 }

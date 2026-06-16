@@ -136,7 +136,7 @@ export default class UpstoxAdapter extends BaseBrokerAdapter {
     }
   }
 
-  async refreshToken(refreshToken) {
+  async refreshToken(_refreshToken) {
     throw new Error('Upstox V2 refresh mechanism not fully supplied in this configuration.');
   }
 

@@ -17,9 +17,7 @@ export default function Rewards() {
   const [loading, setLoading] = useState(true);
   const [showUnlocked, setShowUnlocked] = useState(null);
 
-  useEffect(() => { fetchRewards(); }, []);
-
-  const fetchRewards = async () => {
+  const fetchRewards = React.useCallback(async () => {
     try {
       const res = await axios.get(`${API_BASE_URL}/api/rewards/profile?user_id=${user?.id || 1}`);
       setData(res.data);
@@ -28,7 +26,9 @@ export default function Rewards() {
       }
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
-  };
+  }, [user]);
+
+  useEffect(() => { fetchRewards(); }, [fetchRewards]);
 
   if (loading) return <div className="py-20 text-center"><Loader2 className="w-8 h-8 text-primary mx-auto animate-spin" /></div>;
   if (!data) return null;
