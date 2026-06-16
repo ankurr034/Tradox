@@ -210,8 +210,16 @@ Respond strictly in the following JSON format without any markdown blocks or ext
       const parsed = JSON.parse(match ? match[0] : text);
       res.json(parsed);
     } catch (err) {
-      console.error('[RISK_COACH_CHAT] Failed:', err.message);
-      res.status(502).json({ error: 'Failed to generate advisory response.' });
+      console.error('[RISK_COACH_CHAT] Failed, returning offline fallback:', err.message);
+      res.json({
+        title: 'Coach Session (Offline Fallback)',
+        verdict: 'HOLD',
+        body: `The Advisory Coach is running in offline fallback mode (Error: ${err.message}).\n\nPlease check your GEMINI_API_KEY. Locally, based on your portfolio value of ₹${portfolio.totalValue}, it is recommended to monitor your risk allocation.`,
+        symbol: null,
+        price: null,
+        change_pct: 0.0,
+        confidence: 70
+      });
     }
   } catch (err) {
     console.error('[RISK_COACH_CHAT] Crash:', err.message);

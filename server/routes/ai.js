@@ -126,11 +126,13 @@ router.post('/chat', async (req, res) => {
       }
 
       let parsed = null;
+      let errorOccurred = null;
       for (let attempt = 0; attempt < 2 && !parsed; attempt++) {
         try {
           const result = await model.generateContent(PROMPT(message));
           parsed = validateAdvice(extractJson(result.response.text()));
         } catch (e) {
+          errorOccurred = e.message;
           if (attempt === 1) {
             console.error('Gemini call/parse failed after retry:', e.message);
           }
@@ -138,7 +140,16 @@ router.post('/chat', async (req, res) => {
       }
 
       if (!parsed) {
-        throw new Error('AI response was invalid. Please rephrase and try again.');
+        console.warn('[AI_COPILOT] Gemini call failed, returning simulated offline response.');
+        return {
+          title: 'AI Copilot (Offline Mode)',
+          verdict: 'HOLD',
+          body: `The AI Copilot is running in fallback offline mode (Error: ${errorOccurred || 'Invalid response format'}).\n\n**Analysis:** Market shows normal simulated activity. Please check your system's GEMINI_API_KEY environment variable.\n\n**Risk:** Medium\n**Recommendation:** Monitor positions and technical indicators.`,
+          symbol: 'MOCK',
+          price: 150.0,
+          change_pct: 0.0,
+          confidence: 60
+        };
       }
       return parsed;
     };
