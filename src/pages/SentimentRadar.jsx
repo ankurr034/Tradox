@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Radio, TrendingUp, TrendingDown, Flame, MessageCircle, Heart, Search, ArrowUp, Loader2, BarChart2, Globe, Zap, ThumbsUp, ThumbsDown, Minus } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { API_BASE_URL } from '../config';
 
 const TREND_CONFIG = {
@@ -57,7 +57,7 @@ export default function SentimentRadar() {
           </div>
           Social Sentiment Radar
         </h1>
-        <p className="text-zinc-500 mt-2 text-sm">Live social media sentiment tracking • Exclusive to NexusAI — no other Indian app has this</p>
+        <p className="text-zinc-500 mt-2 text-sm">Live social media sentiment tracking • Exclusive to Tradox — no other Indian app has this</p>
       </div>
 
       {/* Market Mood Banner */}

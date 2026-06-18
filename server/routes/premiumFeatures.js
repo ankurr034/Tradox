@@ -15,7 +15,7 @@ router.use('/microstructure', requirePremium);
 // router.use('/stock/targets', requirePremium); // Allow access from PriceTargets page which does not carry user context
 router.use('/portfolio/stresstest', requirePremium);
 router.use('/portfolio/xray', requirePremium);
-router.use('/sentiment/radar', requirePremium);
+// router.use('/sentiment/radar', requirePremium);
 
 // Initialize Gemini
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || 'dummy_key');

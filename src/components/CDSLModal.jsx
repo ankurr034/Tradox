@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ShieldCheck, MessageSquare, Key, X, Smartphone, CheckCircle2, Lock, RefreshCw, FileText, Building2, Clock, AlertTriangle, ExternalLink, Copy, Hash } from 'lucide-react';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { useToast } from './Toast';
 import { useUser } from '../context/UserContext';
 import { API_BASE_URL } from '../config';

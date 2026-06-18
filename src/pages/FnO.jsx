@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Settings, Zap, AlertTriangle, ShoppingBag, X, Activity, ChevronDown } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useToast } from '../components/Toast';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { API_BASE_URL } from '../config';
 
 export default function FnO() {

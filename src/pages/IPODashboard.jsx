@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { BarChart2, ArrowUp, ArrowDown, TrendingUp, TrendingDown, Star, Clock, Rocket, FileText, Users, DollarSign, ChevronRight, ExternalLink, Bell, CheckCircle2, AlertTriangle, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { useUser } from '../context/UserContext';
 import { useToast } from '../components/Toast';
 import { API_BASE_URL } from '../config';

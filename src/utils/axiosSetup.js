@@ -93,7 +93,21 @@ const responseInterceptorError = async (error) => {
   const originalRequest = error.config;
   const isAuthRequest = originalRequest && originalRequest.url && originalRequest.url.includes('/api/auth/');
   
-  if (error.response?.status === 401 && !isAuthRequest && !originalRequest._retry && !originalRequest.url.includes('/broker/refresh')) {
+  // Handle platform user token expiry/failures
+  if (error.response?.status === 401 && (
+    error.response?.data?.error === 'TOKEN_EXPIRED' || 
+    error.response?.data?.error === 'Authentication failed' ||
+    (originalRequest && !originalRequest.headers?.['Authorization'])
+  )) {
+    if (error.response?.data?.error === 'TOKEN_EXPIRED') {
+      localStorage.removeItem('tradox_jwt');
+      localStorage.removeItem('tradox_user_id');
+      window.dispatchEvent(new Event('user_session_expired'));
+    }
+    return Promise.reject(error);
+  }
+  
+  if (error.response?.status === 401 && !isAuthRequest && !originalRequest?._retry && originalRequest?.url && !originalRequest.url.includes('/broker/refresh')) {
     originalRequest._retry = true;
     
     if (isRefreshing) {

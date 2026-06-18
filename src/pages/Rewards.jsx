@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, Star, Flame, Zap, Target, Lock, Award, ChevronUp, Sparkles, TrendingUp, BarChart2, Loader2 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { useUser } from '../context/UserContext';
 import { API_BASE_URL } from '../config';
 

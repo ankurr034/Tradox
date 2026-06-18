@@ -81,7 +81,7 @@ function PremiumRoute({ children }) {
   if (loading) return <LoadingFallback />;
   if (!user) return <Navigate to="/login" />;
   
-  if (!user.isPremium && !user.isDemoPremium) {
+  if (!user.isPremium && !user.isDemoPremium && !import.meta.env.DEV) {
     return (
       <div className="relative w-full h-full min-h-[80vh]">
         <div className="absolute inset-0 pointer-events-none select-none overflow-hidden" style={{ filter: 'blur(12px) brightness(0.6)' }}>

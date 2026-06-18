@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Calendar, TrendingUp, TrendingDown, Zap, Target, ChevronRight, Clock, BarChart2, ArrowUpRight, ArrowDownRight, Loader2, Filter, Star } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { API_BASE_URL } from '../config';
 import { useNavigate } from 'react-router-dom';
 

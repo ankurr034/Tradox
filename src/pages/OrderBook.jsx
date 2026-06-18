@@ -4,7 +4,7 @@ import { RefreshCw, ClipboardList, Filter, XCircle, CheckCircle2, Clock, ArrowUp
 import { Link } from 'react-router-dom';
 import { useToast } from '../components/Toast';
 import { useUser } from '../context/UserContext';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { API_BASE_URL } from '../config';
 
 export default function OrderBook() {

@@ -304,24 +304,74 @@ router.get('/options/chain/:symbol', (req, res) => {
   const { symbol } = req.params;
   const spotPrice = MarketDataService.getCurrentPrice(symbol);
   const baseStrike = Math.round(spotPrice / 10) * 10;
+  const lotSize = symbol === 'NIFTY' ? 50 : (symbol === 'BANKNIFTY' ? 15 : 250);
   
   const chain = [];
   for (let i = -5; i <= 5; i++) {
     const strike = baseStrike + i * 10;
     chain.push({
       strike,
-      ce_ltp: parseFloat(Math.max(0.5, spotPrice - strike + 20).toFixed(2)),
+      ce_premium: parseFloat(Math.max(0.5, spotPrice - strike + 20).toFixed(2)),
       ce_oi: Math.floor(30000 + Math.abs(i) * 8000),
       ce_iv: parseFloat((15 + Math.abs(i) * 2).toFixed(1)),
       ce_delta: parseFloat((0.5 - i * 0.08).toFixed(3)),
-      pe_ltp: parseFloat(Math.max(0.5, strike - spotPrice + 20).toFixed(2)),
+      pe_premium: parseFloat(Math.max(0.5, strike - spotPrice + 20).toFixed(2)),
       pe_oi: Math.floor(25000 + Math.abs(i) * 7000),
       pe_iv: parseFloat((16 + Math.abs(i) * 2.2).toFixed(1)),
       pe_delta: parseFloat((-0.5 + i * 0.08).toFixed(3))
     });
   }
 
-  res.json({ success: true, symbol, spot: spotPrice, expiry: getNextThursday(), chain });
+  res.json({
+    success: true,
+    symbol,
+    spot_price: spotPrice,
+    atm_strike: baseStrike,
+    lot_size: lotSize,
+    expiry: getNextThursday(),
+    strikes: chain
+  });
+});
+
+router.get('/options/strategies/templates', (req, res) => {
+  const templates = [
+    {
+      name: 'Long Straddle',
+      icon: '🎭',
+      difficulty: 'BEGINNER',
+      description: 'Buy ATM Call and Put. Profits from large move in either direction.',
+      market_view: 'HIGH VOLATILITY'
+    },
+    {
+      name: 'Short Straddle',
+      icon: '⚖️',
+      difficulty: 'ADVANCED',
+      description: 'Sell ATM Call and Put. Profits from low volatility and time decay.',
+      market_view: 'NEUTRAL / LOW VOLATILITY'
+    },
+    {
+      name: 'Bull Call Spread',
+      icon: '🐂',
+      difficulty: 'BEGINNER',
+      description: 'Buy ITM Call, Sell OTM Call. Modest bullish strategy with capped risk.',
+      market_view: 'MODERATE BULLISH'
+    },
+    {
+      name: 'Bear Put Spread',
+      icon: '🐻',
+      difficulty: 'BEGINNER',
+      description: 'Buy ITM Put, Sell OTM Put. Modest bearish strategy with capped risk.',
+      market_view: 'MODERATE BEARISH'
+    },
+    {
+      name: 'Iron Condor',
+      icon: '🦅',
+      difficulty: 'INTERMEDIATE',
+      description: 'Sell OTM Put/Call spread. Profits from rangebound consolidation.',
+      market_view: 'NEUTRAL / rangebound'
+    }
+  ];
+  res.json({ success: true, templates });
 });
 
 // ═══════════════════════════════════════════════════════════

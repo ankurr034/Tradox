@@ -46,11 +46,22 @@ export const SocketProvider = ({ children }) => {
         startHeartbeat(socketInstance);
       });
 
-      socketInstance.on('disconnect', () => {
-        if (import.meta.env.DEV) console.log('[Socket TELEMETRY] Disconnected');
+      socketInstance.on('connect_error', (err) => {
+        if (import.meta.env.DEV) console.warn('[Socket TELEMETRY] Connection error:', err.message);
         setIsConnected(false);
         stopHeartbeat();
+        // Still attempt reconnect with backoff — server now allows anonymous
         handleReconnect();
+      });
+
+      socketInstance.on('disconnect', (reason) => {
+        if (import.meta.env.DEV) console.log('[Socket TELEMETRY] Disconnected:', reason);
+        setIsConnected(false);
+        stopHeartbeat();
+        // Only reconnect for non-client-initiated disconnects
+        if (reason !== 'io client disconnect') {
+          handleReconnect();
+        }
       });
 
       setSocket(socketInstance);

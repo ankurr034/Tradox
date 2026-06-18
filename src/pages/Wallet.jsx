@@ -4,7 +4,7 @@ import { Wallet as WalletIcon, ArrowUpRight, ArrowDownLeft, History, RefreshCw, 
 import { useToast } from '../components/Toast';
 import { useUser } from '../context/UserContext';
 import { useWeb3 } from '../context/Web3Context';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { Link } from 'react-router-dom';
 import PaymentPortal from '../components/PaymentPortal';
 import { API_BASE_URL } from '../config';
@@ -248,7 +248,7 @@ export default function Wallet() {
               <button
                 onClick={() => handleAction('ADD')}
                 disabled={loading}
-                className="flex-1 py-3 bg-gradient-to-r from-primary to-emerald-400 hover:shadow-lg hover:shadow-primary/20 text-black font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+                className="flex-1 py-3 bg-emerald-500 hover:bg-emerald-600 hover:shadow-lg hover:shadow-emerald-500/20 text-black font-bold rounded-xl flex items-center justify-center gap-2 transition-all disabled:opacity-50"
               >
                 {loading ? <RefreshCw className="w-4 h-4 animate-spin" /> : <><ArrowDownLeft className="w-5 h-5" /> REFILL</>}
               </button>

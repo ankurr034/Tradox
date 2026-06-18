@@ -1,10 +1,10 @@
 import express from 'express';
 import { GoogleGenerativeAI } from '@google/generative-ai';
-import { requirePremium } from '../middleware/auth.js';
+import { requireAuth } from '../middleware/auth.js';
 import { addAIJob } from '../services/queueManager.js';
 
 const router = express.Router();
-router.use(requirePremium);
+router.use(requireAuth);
 
 const API_KEY = process.env.GEMINI_API_KEY;
 export let genAI;

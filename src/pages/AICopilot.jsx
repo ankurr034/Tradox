@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Bot, Send, Sparkles, TrendingUp, TrendingDown, Target, Shield, BarChart3, MessageSquare, Zap, ArrowRight, RefreshCw } from 'lucide-react';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { useUser } from '../context/UserContext';
 import { useNavigate } from 'react-router-dom';
 import { API_BASE_URL } from '../config';
@@ -96,11 +96,12 @@ export default function AICopilot() {
         blockHash
       };
       setMessages(prev => [...prev, aiMsg]);
-    } catch {
+    } catch (err) {
+      const errMsg = err.response?.data?.error || err.response?.data?.detail || err.customMessage || err.message || 'Failed to get response. Please try again.';
       setMessages(prev => [...prev, {
         role: 'assistant',
         title: '⚠️ Error',
-        body: 'Failed to get response. Please try again.',
+        body: errMsg,
         verdict: 'ERROR',
         timestamp: new Date().toLocaleTimeString(),
       }]);

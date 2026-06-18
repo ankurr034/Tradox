@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, CreditCard, Landmark, Wallet, CheckCircle2, X, RefreshCw, Smartphone, Key } from 'lucide-react';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { useUser } from '../context/UserContext';
 import { useToast } from './Toast';
 import { API_BASE_URL } from '../config';

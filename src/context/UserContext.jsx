@@ -98,10 +98,19 @@ export const UserProvider = ({ children }) => {
       console.log('[USER CONTEXT] Broker session completely expired. Disconnecting locally.');
       setBrokerConnected(false);
     };
+
+    const handleUserExpired = () => {
+      console.log('[USER CONTEXT] Platform user session expired. Logging out.');
+      logout();
+    };
     
     window.addEventListener('broker_session_expired', handleBrokerExpired);
-    return () => window.removeEventListener('broker_session_expired', handleBrokerExpired);
-  }, [fetchUserData]);
+    window.addEventListener('user_session_expired', handleUserExpired);
+    return () => {
+      window.removeEventListener('broker_session_expired', handleBrokerExpired);
+      window.removeEventListener('user_session_expired', handleUserExpired);
+    };
+  }, [fetchUserData, logout]);
 
   const login = useCallback(async (username, password) => {
     try {

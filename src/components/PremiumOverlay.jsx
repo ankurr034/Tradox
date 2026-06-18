@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { Check, Zap, Crown, Shield, X, RefreshCw } from 'lucide-react';
 import { useUser } from '../context/UserContext';
 import { useToast } from './Toast';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { API_BASE_URL } from '../config';
 
 const loadRazorpay = () => {

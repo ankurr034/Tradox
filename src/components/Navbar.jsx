@@ -212,8 +212,8 @@ export default function Navbar() {
                 <rect x="74" y="20" width="11" height="56" rx="2" fill="#E53E3E" transform="rotate(45 79 48)"/>
                 <rect x="74" y="20" width="11" height="56" rx="2" fill="#E53E3E" transform="rotate(-45 79 48)"/>
                 <polygon points="79,28 88,46 79,41 70,46" fill="#fff" opacity="0.9"/>
-                <text x="108" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="38" font-weight="900" fill="#FFFFFF" letter-spacing="3">TRADOX</text>
-                <text x="109" y="80" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="11" font-weight="700" fill="#888888" letter-spacing="3">TRADE · GROW · DOMINATE</text>
+                <text x="108" y="60" fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" fontSize="38" fontWeight="900" fill="#FFFFFF" letterSpacing="3">TRADOX</text>
+                <text x="109" y="80" fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" fontSize="11" fontWeight="700" fill="#888888" letterSpacing="3">TRADE · GROW · DOMINATE</text>
               </svg>
             </Link>
 

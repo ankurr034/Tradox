@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Shield, PlayCircle, BarChart2, Activity, Zap, Server, StopCircle, RefreshCw } from 'lucide-react';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { useUser } from '../context/UserContext';
 import { API_BASE_URL } from '../config';
 import { useToast } from '../components/Toast';

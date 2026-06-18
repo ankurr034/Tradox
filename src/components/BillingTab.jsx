@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { CreditCard, Download, Zap, XCircle, AlertCircle, RefreshCw, CheckCircle2 } from 'lucide-react';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { API_BASE_URL } from '../config';
 import { useUser } from '../context/UserContext';
 import { useToast } from './Toast';
