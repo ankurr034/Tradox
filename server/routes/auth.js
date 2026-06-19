@@ -311,7 +311,7 @@ router.post('/google', async (req, res) => {
     }
 
     let payload;
-    if (credential.startsWith('ya29.')) {
+    if (credential.startsWith('ya29.') || !credential.includes('.')) {
       // Resolve Google profile info using access token via userinfo endpoint
       const response = await fetch(`https://www.googleapis.com/oauth2/v3/userinfo?access_token=${credential}`);
       if (!response.ok) {
