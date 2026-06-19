@@ -264,9 +264,10 @@ app.use(helmet({
   }
 }));
 
-// Add Custom Permissions-Policy Header
+// Add Custom Permissions-Policy Header & Private Network CORS
 app.use((req, res, next) => {
   res.setHeader("Permissions-Policy", "geolocation=(), microphone=(), camera=()");
+  res.setHeader("Access-Control-Allow-Private-Network", "true");
   next();
 });
 
