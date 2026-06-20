@@ -279,29 +279,7 @@ const Login = () => {
             </p>
           </div>
 
-          {/* Demo Login Hint */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.5 }}
-            className="mt-6 p-4 bg-primary/[0.04] rounded-2xl border border-primary/10 relative z-10"
-          >
-            <div className="flex items-center justify-between">
-              <div>
-                <span className="text-[9px] text-primary/70 font-black uppercase tracking-widest">Demo Access</span>
-                <div className="text-[11px] text-zinc-500 mt-1 font-mono-data">
-                  <span className="text-zinc-400">User:</span> demo &nbsp;|&nbsp; <span className="text-zinc-400">Pass:</span> demo123
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => { setUsername('demo'); setPassword('demo123'); }}
-                className="text-[9px] font-black text-primary/60 hover:text-primary uppercase tracking-widest px-3 py-1.5 rounded-lg bg-primary/[0.05] hover:bg-primary/[0.1] transition-all border border-primary/10"
-              >
-                Auto-Fill
-              </button>
-            </div>
-          </motion.div>
+
         </div>
 
         {/* Feature badges below card */}
