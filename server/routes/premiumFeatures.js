@@ -624,7 +624,7 @@ router.get('/portfolio/xray', async (req, res) => {
 // 7. Sentiment
 router.get('/sentiment/radar', async (req, res) => {
   const { symbol } = req.query;
-  const cacheKey = symbol ? `radar_${symbol}` : 'radar_global';
+  const cacheKey = symbol ? `radar_${symbol.trim().toUpperCase()}` : 'radar_global';
 
   try {
     const cached = await SentimentCache.findOne({ symbol: cacheKey });
@@ -632,22 +632,61 @@ router.get('/sentiment/radar', async (req, res) => {
       return res.json(cached.data);
     }
 
-    const fallback = {
-      overall_sentiment: 'BULLISH',
-      news_score: 72,
-      social_score: 85,
-      options_score: 60,
-      overall_score: 74,
-      trending_keywords: ['Breakout', 'Record Highs', 'Earnings Beat'],
-      ai_summary: "Market sentiment is overwhelmingly positive driven by recent tech earnings and strong institutional buying. Options data shows strong put-writing support at lower levels.",
-      top_sources: [
-        { source: 'Reuters', sentiment: 'POSITIVE', impact: 'HIGH' },
-        { source: 'Twitter/X', sentiment: 'VERY POSITIVE', impact: 'MEDIUM' }
-      ]
-    };
+    let fallback, prompt;
 
-    const target = symbol ? `stock ${symbol}` : 'the overall Indian stock market (Nifty 50)';
-    const prompt = `Analyze the current live sentiment for ${target}. Output JSON matching this exact schema: ${JSON.stringify(fallback)}. Ensure realistic sentiment scores (0-100) and an insightful AI summary. Return ONLY JSON.`;
+    if (!symbol) {
+      fallback = {
+        market_mood: {
+          overall_score: 74,
+          label: 'Greed'
+        },
+        trending: [
+          { symbol: 'RELIANCE', name: 'Reliance Industries', trend: 'SURGING', sentiment_score: 85, mentions: 12500, price: 2450, change_pct: 2.4, positive: true },
+          { symbol: 'TCS', name: 'Tata Consultancy Services', trend: 'RISING', sentiment_score: 72, mentions: 8400, price: 3800, change_pct: 1.2, positive: true },
+          { symbol: 'HDFCBANK', name: 'HDFC Bank', trend: 'VOLATILE', sentiment_score: 58, mentions: 15000, price: 1420, change_pct: -0.8, positive: false },
+          { symbol: 'TATAMOTORS', name: 'Tata Motors', trend: 'SURGING', sentiment_score: 90, mentions: 9200, price: 950, change_pct: 4.5, positive: true }
+        ]
+      };
+      prompt = `Analyze the current live general sentiment for the overall Indian stock market (Nifty 50). Output JSON matching this exact schema: ${JSON.stringify(fallback)}. Ensure realistic sentiment scores (0-100) and return ONLY valid JSON.`;
+    } else {
+      const cleanSymbol = symbol.trim().toUpperCase();
+      fallback = {
+        detail: {
+          symbol: cleanSymbol,
+          sentiment_label: 'BULLISH',
+          overall_score: 78,
+          total_mentions_24h: 8400,
+          mentions_change: 15,
+          breakdown: { bullish: 72, bearish: 28 },
+          timeline: [
+            { hour: '09:00', score: 70 },
+            { hour: '11:00', score: 72 },
+            { hour: '13:00', score: 78 },
+            { hour: '15:00', score: 80 }
+          ],
+          source_breakdown: [
+            { icon: '🐦', source: 'Twitter/X', mentions: 5200, sentiment: 82 },
+            { icon: '💬', source: 'Reddit & Forums', mentions: 2200, sentiment: 68 },
+            { icon: '📰', source: 'News & Media', mentions: 1000, sentiment: 75 }
+          ],
+          posts: [
+            { platform: 'Twitter/X', sentiment: 'BULLISH', text: `${cleanSymbol} technical breakout confirmed with high volume today!`, likes: 312, time: '15 mins ago' },
+            { platform: 'Reddit', sentiment: 'BULLISH', text: `Strong institutional accumulation patterns showing in ${cleanSymbol} order book.`, likes: 98, time: '1 hour ago' },
+            { platform: 'Twitter/X', sentiment: 'BEARISH', text: `Some short term resistance ahead for ${cleanSymbol}. Watch the key pivot levels.`, likes: 45, time: '2 hours ago' }
+          ],
+          ai_summary: `${cleanSymbol} is experiencing positive social momentum, fueled by strong volume breakouts and institutional accumulation.`,
+          word_cloud: [
+            { text: 'Breakout', value: 85 },
+            { text: 'Volume', value: 70 },
+            { text: 'Accumulation', value: 55 },
+            { text: 'Earnings', value: 45 },
+            { text: 'FII', value: 35 }
+          ]
+        }
+      };
+      prompt = `Analyze the current live sentiment for the stock ${cleanSymbol}. Output JSON matching this exact schema: ${JSON.stringify(fallback)}. Ensure realistic sentiment scores (0-100) and return ONLY valid JSON.`;
+    }
+
     const aiData = await generateJsonWithGemini(prompt, fallback);
 
     if (cached) {

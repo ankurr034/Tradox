@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { TrendingUp, TrendingDown, ArrowRight, RefreshCw, Activity, Zap, BarChart2, Briefcase, ChevronRight, Sparkles, Target, Globe, Newspaper, Star } from 'lucide-react';
-import axios from 'axios';
+import axios from '../utils/axiosSetup';
 import { useUser } from '../context/UserContext';
 import { useToast } from '../components/Toast';
 import { API_BASE_URL } from '../config';

@@ -483,6 +483,73 @@ class MarketDataService {
   }
 
   // ═══════════════════════════════════════════════════════════
+  //  Fetch Live News using Yahoo Finance Search API
+  // ═══════════════════════════════════════════════════════════
+  async getLiveNews(symbol) {
+    try {
+      const yahooSymbol = getYahooSymbol(symbol);
+      const result = await yahooFinance.search(yahooSymbol, { newsCount: 5 });
+      if (result && result.news && result.news.length > 0) {
+        return result.news.map(item => {
+          const titleLower = item.title.toLowerCase();
+          let sentiment = 'NEUTRAL';
+          let sentimentColor = '#8b5cf6';
+          
+          if (titleLower.includes('up') || titleLower.includes('rise') || titleLower.includes('growth') || titleLower.includes('bull') || titleLower.includes('gain') || titleLower.includes('high') || titleLower.includes('profit') || titleLower.includes('buy') || titleLower.includes('positive') || titleLower.includes('surge') || titleLower.includes('inflow')) {
+            sentiment = 'BULLISH';
+            sentimentColor = '#10b981';
+          } else if (titleLower.includes('down') || titleLower.includes('fall') || titleLower.includes('drop') || titleLower.includes('bear') || titleLower.includes('loss') || titleLower.includes('low') || titleLower.includes('sell') || titleLower.includes('negative') || titleLower.includes('decline') || titleLower.includes('dip')) {
+            sentiment = 'BEARISH';
+            sentimentColor = '#f43f5e';
+          }
+
+          return {
+            title: item.title,
+            publisher: item.publisher || 'Yahoo Finance',
+            link: item.link,
+            ai_sentiment: sentiment,
+            ai_sentiment_color: sentimentColor,
+            time: item.providerPublishTime ? new Date(item.providerPublishTime).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }) : new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })
+          };
+        });
+      }
+    } catch (e) {
+      log.error(`Error fetching live news for ${symbol}:`, { error: e.message });
+    }
+    return null;
+  }
+
+  async getGlobalNews() {
+    try {
+      const result = await yahooFinance.search('^NSEI', { newsCount: 5 });
+      if (result && result.news && result.news.length > 0) {
+        return result.news.map(item => {
+          const titleLower = item.title.toLowerCase();
+          let sentiment = 'NEUTRAL';
+          let sentimentColor = '#8b5cf6';
+          if (titleLower.includes('up') || titleLower.includes('rise') || titleLower.includes('growth') || titleLower.includes('bull') || titleLower.includes('gain') || titleLower.includes('high') || titleLower.includes('profit') || titleLower.includes('buy') || titleLower.includes('positive') || titleLower.includes('surge') || titleLower.includes('inflow')) {
+            sentiment = 'BULLISH';
+            sentimentColor = '#10b981';
+          } else if (titleLower.includes('down') || titleLower.includes('fall') || titleLower.includes('drop') || titleLower.includes('bear') || titleLower.includes('loss') || titleLower.includes('low') || titleLower.includes('sell') || titleLower.includes('negative') || titleLower.includes('decline') || titleLower.includes('dip')) {
+            sentiment = 'BEARISH';
+            sentimentColor = '#f43f5e';
+          }
+          return {
+            publisher: item.publisher || 'Yahoo Finance',
+            title: item.title,
+            link: item.link,
+            ai_sentiment: sentiment,
+            ai_sentiment_color: sentimentColor
+          };
+        });
+      }
+    } catch (e) {
+      log.error(`Error fetching global news:`, { error: e.message });
+    }
+    return null;
+  }
+
+  // ═══════════════════════════════════════════════════════════
   //  Static: All Heatmap Symbols
   // ═══════════════════════════════════════════════════════════
   static getAllHeatmapSymbols() {

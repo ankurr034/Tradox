@@ -9,7 +9,7 @@ import { omsOrderLatency, idempotencyReplayCounter } from '../utils/telemetry.js
 
 const router = express.Router();
 
-router.get('/explore', (req, res) => {
+router.get('/explore', async (req, res) => {
   // Helper to format a live stock entry
   const formatStock = (symbol, name, surge) => {
     const cached = MarketDataService.priceCache.get(symbol);
@@ -38,6 +38,12 @@ router.get('/explore', (req, res) => {
       positive: change >= 0
     };
   };
+
+  const liveNews = await MarketDataService.getGlobalNews();
+  const defaultNews = [
+    { publisher: 'Reuters', title: 'Foreign inflows hit 6-month high in Indian equities', link: 'https://www.reuters.com/world/india/', ai_sentiment: 'BULLISH' },
+    { publisher: 'Bloomberg', title: 'Tech sector expects strong Q2 earnings guidance', link: 'https://www.bloomberg.com/asia', ai_sentiment: 'POSITIVE' }
+  ];
 
   res.json({
     indices: [
@@ -69,10 +75,7 @@ router.get('/explore', (req, res) => {
       formatStock('ITC', 'ITC Limited', '4x'),
       formatStock('AXISBANK', 'Axis Bank', '3.5x')
     ],
-    news: [
-      { publisher: 'Reuters', title: 'Foreign inflows hit 6-month high in Indian equities', link: '#', ai_sentiment: 'BULLISH' },
-      { publisher: 'Bloomberg', title: 'Tech sector expects strong Q2 earnings guidance', link: '#', ai_sentiment: 'POSITIVE' }
-    ]
+    news: liveNews && liveNews.length > 0 ? liveNews : defaultNews
   });
 });
 
@@ -255,16 +258,21 @@ router.get('/history', async (req, res) => {
   }
 });
 
-router.get('/news', (req, res) => {
+router.get('/news', async (req, res) => {
   try {
     const { symbol } = req.query;
     if (!symbol) return res.status(400).json({ detail: 'Symbol required' });
+    const cleanSymbol = symbol.trim().toUpperCase();
+    
+    const liveNews = await MarketDataService.getLiveNews(cleanSymbol);
+    const defaultNews = [
+      { title: `Strong institutional buying detected in ${cleanSymbol}`, publisher: 'Tradox Intelligence', link: `https://www.google.com/search?tbm=nws&q=${encodeURIComponent(cleanSymbol + ' stock')}`, ai_sentiment: 'BULLISH', ai_sentiment_color: '#10b981' },
+      { title: `Sector rotation favors ${cleanSymbol}`, publisher: 'Market Watch', link: `https://www.google.com/search?tbm=nws&q=${encodeURIComponent(cleanSymbol + ' energy stock')}`, ai_sentiment: 'POSITIVE', ai_sentiment_color: '#3b82f6' },
+      { title: `${cleanSymbol} upcoming earnings expectations`, publisher: 'Bloomberg', link: `https://www.google.com/search?tbm=nws&q=${encodeURIComponent(cleanSymbol + ' earnings')}`, ai_sentiment: 'NEUTRAL', ai_sentiment_color: '#8b5cf6' }
+    ];
+
     res.json({
-      news: [
-        { title: `Strong institutional buying detected in ${symbol}`, publisher: 'Tradox Intelligence', link: '#', ai_sentiment: 'BULLISH', ai_sentiment_color: '#10b981' },
-        { title: `Sector rotation favors ${symbol}`, publisher: 'Market Watch', link: '#', ai_sentiment: 'POSITIVE', ai_sentiment_color: '#3b82f6' },
-        { title: `${symbol} upcoming earnings expectations`, publisher: 'Bloomberg', link: '#', ai_sentiment: 'NEUTRAL', ai_sentiment_color: '#8b5cf6' }
-      ]
+      news: liveNews && liveNews.length > 0 ? liveNews : defaultNews
     });
   } catch(e) {
     res.status(500).json({ detail: e.message });
