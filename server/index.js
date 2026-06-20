@@ -103,6 +103,7 @@ process.on('unhandledRejection', (reason) => {
 //  Express App & HTTP Server
 // ═══════════════════════════════════════════════════════════
 const app = express();
+app.set('trust proxy', 1);
 
 // Correlation ID Tracking
 app.use(correlationIdMiddleware);
