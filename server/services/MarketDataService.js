@@ -238,6 +238,75 @@ class MarketDataService {
 
       this.onFetchSuccess();
     } catch (err) {
+      // ═══════════════════════════════════════════════════════════
+      //  FALLBACK: v8 Spark API (Bypasses crumb requirement)
+      // ═══════════════════════════════════════════════════════════
+      try {
+        const yahooSymbols = symbols.map(getYahooSymbol);
+        const batchSize = 20;
+        let successfulFallbacks = 0;
+        
+        for (let i = 0; i < yahooSymbols.length; i += batchSize) {
+          const batch = yahooSymbols.slice(i, i + batchSize);
+          const url = `https://query1.finance.yahoo.com/v8/finance/spark?symbols=${batch.join(',')}&interval=1d&range=1d`;
+          const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0' }});
+          
+          if (!res.ok) continue;
+          
+          const data = await res.json();
+          const updatesForPubSub = [];
+          
+          for (const ySym of batch) {
+            const spark = data[ySym];
+            if (!spark || !spark.close || spark.close.length === 0) continue;
+            
+            let originalSymbol = ySym;
+            const origIdx = yahooSymbols.indexOf(ySym);
+            if (origIdx >= 0) {
+              originalSymbol = symbols[origIdx];
+            } else {
+              if (ySym === '^NSEI') originalSymbol = 'NIFTY 50';
+              else if (ySym === '^BSESN') originalSymbol = 'SENSEX';
+              else if (ySym === '^NSEBANK') originalSymbol = 'BANKNIFTY';
+              else originalSymbol = ySym.replace('.NS', '');
+            }
+            
+            const currentPrice = spark.close[spark.close.length - 1] || this.priceCache.get(originalSymbol)?.price || FALLBACK_PRICES[originalSymbol] || 1000;
+            const previousClose = spark.chartPreviousClose || currentPrice;
+            const change = currentPrice - previousClose;
+            const changePercent = previousClose ? (change / previousClose) * 100 : 0;
+            
+            // Preserve fundamentals if they exist in cache
+            const existingCache = this.priceCache.get(originalSymbol) || {};
+            
+            const priceData = {
+              ...existingCache,
+              price: currentPrice,
+              change,
+              changePercent,
+              previousClose,
+              lastUpdated: Date.now(),
+              source: 'yahoo-spark'
+            };
+            
+            this.priceCache.set(originalSymbol, priceData);
+            updatesForPubSub.push({ symbol: originalSymbol, ...priceData });
+            successfulFallbacks++;
+          }
+          
+          if (updatesForPubSub.length > 0 && redisClient && isRedisReady) {
+            redisClient.publish('market_data_updates', JSON.stringify(updatesForPubSub)).catch(() => {});
+          }
+        }
+        
+        if (successfulFallbacks > 0) {
+          this.onFetchSuccess();
+          return; // Spark fallback succeeded!
+        }
+      } catch (fallbackErr) {
+        log.error('Spark fallback also failed:', fallbackErr.message);
+      }
+
       this.onFetchFailure(err);
       log.warn(`Live quote fetch failed: ${err.message}. Retaining cached prices. Backoff: ${Math.round(this.backoff.currentInterval / 1000)}s`);
     }
