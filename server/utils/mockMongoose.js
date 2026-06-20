@@ -40,7 +40,19 @@ export function setupMongooseMockFallback() {
     return this;
   };
 
-  // 3. Mock Model.insertMany
+  // 3. Mock Model.insertMany and Model.create
+  mongoose.Model.create = async function(docs, _options) {
+    const isArray = Array.isArray(docs);
+    const docsArray = isArray ? docs : [docs];
+    const inserted = [];
+    for (const doc of docsArray) {
+      const instance = new this(doc);
+      await instance.save();
+      inserted.push(instance);
+    }
+    return isArray ? inserted : inserted[0];
+  };
+
   mongoose.Model.insertMany = async function(docs, _options) {
     const modelName = this.modelName;
     if (!memDB[modelName]) memDB[modelName] = [];

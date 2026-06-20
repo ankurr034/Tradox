@@ -508,8 +508,9 @@ const connectDB = async (retries = 5) => {
   for (let i = 0; i < retries; i++) {
     try {
       await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/nexusai', {
-        serverSelectionTimeoutMS: 5000,
-        heartbeatFrequencyMS: 10000
+        serverSelectionTimeoutMS: 15000,
+        heartbeatFrequencyMS: 10000,
+        family: 4 // Force IPv4 to prevent DNS resolution issues on Render
       });
       log.info('Connected to MongoDB');
       return true;

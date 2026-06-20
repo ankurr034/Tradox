@@ -35,7 +35,11 @@ async function start() {
   // 1. Connect MongoDB to write audit logs & notifications
   if (process.env.MONGODB_URI) {
     try {
-      await mongoose.connect(process.env.MONGODB_URI);
+      await mongoose.connect(process.env.MONGODB_URI, {
+        serverSelectionTimeoutMS: 15000,
+        heartbeatFrequencyMS: 10000,
+        family: 4
+      });
       log.info('Connected to MongoDB');
     } catch (err) {
       log.error('Failed to connect to MongoDB:', { error: err.message });
