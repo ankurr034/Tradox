@@ -32,7 +32,7 @@ if (!isTest) {
     missingSecrets.push('GEMINI_API_KEY');
   }
   if (isProd && (!SENTRY_DSN || SENTRY_DSN.trim() === '')) {
-    missingSecrets.push('SENTRY_DSN (Required in production)');
+    console.warn('[WARN] SENTRY_DSN is not configured. Running without Sentry error monitoring in production.');
   }
 
   if (missingSecrets.length > 0) {
