@@ -42,7 +42,7 @@ const Login = () => {
       const address = accounts[0];
       const signer = await provider.getSigner();
 
-      // 2. Fetch a nonce from the backend (mocked for frontend demo if backend is offline)
+      // 2. Fetch a nonce from the backend
       let nonce = `Tradox Verification: Sign this message to prove ownership of ${address}. Nonce: ${Date.now()}`;
       try {
         const nonceRes = await axios.post(`${API_BASE_URL}/api/auth/nonce`, { walletAddress: address });
@@ -50,7 +50,7 @@ const Login = () => {
           nonce = nonceRes.data.nonce;
         }
       } catch {
-        console.warn('Could not fetch nonce from backend, using local nonce for demo mode');
+        console.warn('Could not fetch nonce from backend, using local nonce');
       }
 
       // 3. Sign the message
@@ -70,7 +70,7 @@ const Login = () => {
         });
         authData = authRes.data;
       } catch {
-        console.warn('Backend Web3 auth failed, falling back to demo mode');
+        console.warn('Backend Web3 auth failed');
       }
 
       const res = await loginWithWallet(authData.token, authData.user);
@@ -113,18 +113,18 @@ const Login = () => {
   };
 
   const features = [
-    { icon: <TrendingUp size={16} />, text: 'AI-Powered Trading' },
-    { icon: <Shield size={16} />, text: 'Bank-Grade Security' },
-    { icon: <Zap size={16} />, text: 'Real-Time Analytics' },
+    { icon: <TrendingUp size={14} />, text: 'AI-Powered Trading' },
+    { icon: <Shield size={14} />, text: 'Bank-Grade Security' },
+    { icon: <Zap size={14} />, text: 'Real-Time Analytics' },
   ];
 
   return (
-    <div className="flex items-center justify-center min-h-[80vh] py-4 sm:py-8 px-2 sm:px-4">
+    <div className="flex items-center justify-center min-h-[80vh] py-4 sm:py-8 px-3 sm:px-4">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md relative"
+        className="w-full max-w-[420px] relative"
       >
         {/* Main Card */}
         <div className="glass-card p-5 sm:p-8 md:p-10 relative overflow-hidden">
@@ -133,32 +133,48 @@ const Login = () => {
           <div className="absolute -bottom-16 -left-16 w-40 h-40 bg-secondary/10 blur-[60px] rounded-full pointer-events-none" />
 
           {/* Header */}
-          <div className="mb-8 text-center relative z-10">
+          <div className="mb-6 sm:mb-8 text-center relative z-10">
             <motion.div
               initial={{ scale: 0.8 }}
               animate={{ scale: 1 }}
               transition={{ delay: 0.1, type: 'spring' }}
-              className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 mb-5 border border-primary/20 shadow-[0_0_40px_rgba(0,208,156,0.15)]"
+              className="inline-flex items-center justify-center w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary/10 mb-4 sm:mb-5 border border-primary/20 shadow-[0_0_40px_rgba(0,208,156,0.15)]"
             >
-              <LogIn size={28} className="text-primary" />
+              <LogIn size={24} className="text-primary sm:hidden" />
+              <LogIn size={28} className="text-primary hidden sm:block" />
             </motion.div>
-            <h1 className="text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-zinc-400">
+            <h1 className="text-2xl sm:text-3xl font-black bg-clip-text text-transparent bg-gradient-to-r from-white via-white to-zinc-400">
               Welcome Back
             </h1>
-            <p className="text-zinc-500 mt-2 text-sm font-medium">
+            <p className="text-zinc-500 mt-1.5 sm:mt-2 text-xs sm:text-sm font-medium">
               Sign in to your Tradox trading account
             </p>
           </div>
 
+          {/* Google Sign In — Primary CTA */}
+          <div className="relative z-10 mb-5 sm:mb-6">
+            <GoogleSignInButton
+              label="Continue with Google"
+              onSuccess={() => navigate('/')}
+            />
+          </div>
+
+          {/* Divider */}
+          <div className="flex items-center mb-5 sm:mb-6 relative z-10">
+            <div className="flex-1 h-px bg-white/[0.06]" />
+            <span className="text-[10px] uppercase tracking-widest text-zinc-600 px-3 font-black">or sign in with email</span>
+            <div className="flex-1 h-px bg-white/[0.06]" />
+          </div>
+
           {/* Login Form */}
-          <form onSubmit={handleSubmit} className="space-y-5 relative z-10" id="login-form">
+          <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-5 relative z-10" id="login-form">
             {/* Username */}
             <div>
-              <label htmlFor="login-username" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-2 ml-1">
-                Username
+              <label htmlFor="login-username" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest mb-1.5 sm:mb-2 ml-1">
+                Username or Email
               </label>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600">
+                <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-zinc-600">
                   <User size={16} />
                 </span>
                 <input
@@ -166,8 +182,8 @@ const Login = () => {
                   type="text"
                   required
                   autoComplete="username"
-                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl py-3.5 pl-12 pr-4 text-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all placeholder:text-zinc-700 text-sm"
-                  placeholder="Enter your username"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl py-3 sm:py-3.5 pl-10 sm:pl-12 pr-4 text-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all placeholder:text-zinc-700 text-sm"
+                  placeholder="Enter your username or email"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                 />
@@ -176,7 +192,7 @@ const Login = () => {
 
             {/* Password */}
             <div>
-              <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center justify-between mb-1.5 sm:mb-2">
                 <label htmlFor="login-password" className="block text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">
                   Password
                 </label>
@@ -185,7 +201,7 @@ const Login = () => {
                 </button>
               </div>
               <div className="relative">
-                <span className="absolute left-4 top-1/2 -translate-y-1/2 text-zinc-600">
+                <span className="absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-zinc-600">
                   <Lock size={16} />
                 </span>
                 <input
@@ -193,7 +209,7 @@ const Login = () => {
                   type={showPassword ? 'text' : 'password'}
                   required
                   autoComplete="current-password"
-                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl py-3.5 pl-12 pr-12 text-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all placeholder:text-zinc-700 text-sm"
+                  className="w-full bg-white/[0.03] border border-white/[0.08] rounded-xl py-3 sm:py-3.5 pl-10 sm:pl-12 pr-12 text-white focus:border-primary/50 focus:ring-1 focus:ring-primary/20 outline-none transition-all placeholder:text-zinc-700 text-sm"
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -201,7 +217,7 @@ const Login = () => {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors"
+                  className="absolute right-3 sm:right-4 top-1/2 -translate-y-1/2 text-zinc-600 hover:text-zinc-400 transition-colors"
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
                   {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -210,24 +226,25 @@ const Login = () => {
             </div>
 
             {/* Remember Me */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2.5 sm:gap-3">
               <button
                 type="button"
                 onClick={() => setRememberMe(!rememberMe)}
                 id="remember-me-toggle"
-                className={`w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all ${
+                className={`w-4.5 h-4.5 sm:w-5 sm:h-5 rounded-md border-2 flex items-center justify-center transition-all flex-shrink-0 ${
                   rememberMe
                     ? 'bg-primary border-primary'
                     : 'border-zinc-700 hover:border-zinc-500'
                 }`}
+                style={{ width: '1.125rem', height: '1.125rem' }}
               >
                 {rememberMe && (
-                  <svg className="w-3 h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                  <svg className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-black" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                   </svg>
                 )}
               </button>
-              <label htmlFor="remember-me-toggle" className="text-xs text-zinc-500 font-medium cursor-pointer select-none">
+              <label htmlFor="remember-me-toggle" className="text-[11px] sm:text-xs text-zinc-500 font-medium cursor-pointer select-none">
                 Remember me on this device
               </label>
             </div>
@@ -237,9 +254,9 @@ const Login = () => {
               type="submit"
               disabled={isSubmitting}
               id="login-submit-btn"
-              className="w-full bg-primary hover:bg-emerald-400 text-black font-black py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-sm hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.99]"
+              className="w-full bg-primary hover:bg-emerald-400 text-black font-black py-3.5 sm:py-4 rounded-xl shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed uppercase tracking-wider text-xs sm:text-sm hover:shadow-xl hover:shadow-primary/30 hover:scale-[1.01] active:scale-[0.99]"
             >
-              <span>{isSubmitting ? 'Authenticating...' : 'Enter Dashboard'}</span>
+              <span>{isSubmitting ? 'Authenticating...' : 'Sign In'}</span>
               {!isSubmitting && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}
               {isSubmitting && (
                 <svg className="w-4 h-4 animate-spin" viewBox="0 0 24 24" fill="none">
@@ -248,26 +265,11 @@ const Login = () => {
                 </svg>
               )}
             </button>
-
-            {/* Google Sign In Integration */}
-            {!!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
-              <>
-                <div className="flex items-center my-4">
-                  <div className="flex-1 h-px bg-white/[0.06]" />
-                  <span className="text-[10px] uppercase tracking-widest text-zinc-600 px-3 font-black">or</span>
-                  <div className="flex-1 h-px bg-white/[0.06]" />
-                </div>
-                <GoogleSignInButton
-                  label="Continue with Google"
-                  onSuccess={() => navigate('/')}
-                />
-              </>
-            )}
           </form>
 
-          {/* Divider */}
-          <div className="mt-8 pt-6 border-t border-white/[0.05] relative z-10">
-            <p className="text-center text-zinc-500 text-sm">
+          {/* Create Account Link */}
+          <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-white/[0.05] relative z-10">
+            <p className="text-center text-zinc-500 text-xs sm:text-sm">
               Don't have an account?{' '}
               <Link
                 to="/register"
@@ -278,19 +280,17 @@ const Login = () => {
               </Link>
             </p>
           </div>
-
-
         </div>
 
         {/* Feature badges below card */}
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-6 mt-4 sm:mt-6">
+        <div className="flex flex-wrap items-center justify-center gap-2 sm:gap-6 mt-3 sm:mt-6">
           {features.map((feat, i) => (
             <motion.div
               key={i}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.3 + i * 0.1 }}
-              className="flex items-center gap-1.5 text-zinc-600 text-[10px] font-bold uppercase tracking-wider"
+              className="flex items-center gap-1 sm:gap-1.5 text-zinc-600 text-[9px] sm:text-[10px] font-bold uppercase tracking-wider"
             >
               <span className="text-primary/50">{feat.icon}</span>
               {feat.text}

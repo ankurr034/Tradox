@@ -66,6 +66,8 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
 const corsOriginChecker = (origin, callback) => {
   if (!origin) return callback(null, true);
   if (allowedOrigins.includes(origin)) return callback(null, true);
+  // Allow Vercel preview and production deployments
+  if (/\.vercel\.app$/.test(origin)) return callback(null, true);
   if (process.env.NODE_ENV !== 'production' && 
       (/^http:\/\/localhost:\d+$/.test(origin) || /^http:\/\/127\.0\.0\.1:\d+$/.test(origin))) {
     return callback(null, true);

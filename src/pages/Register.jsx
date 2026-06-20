@@ -122,7 +122,7 @@ export default function Register() {
 
 
   return (
-    <div className="flex items-center justify-center min-h-[85vh] py-10 relative overflow-hidden">
+    <div className="flex items-center justify-center min-h-[85vh] py-4 sm:py-10 px-3 sm:px-4 relative overflow-hidden">
       <div className="fixed top-0 right-0 w-[800px] h-[800px] bg-primary/[0.03] rounded-full blur-[200px] -z-10 pointer-events-none" />
       <div className="fixed bottom-0 left-0 w-[600px] h-[600px] bg-secondary/[0.03] rounded-full blur-[150px] -z-10 pointer-events-none" />
 
@@ -131,28 +131,28 @@ export default function Register() {
         animate={{ opacity: 1, y: 0 }}
         className="w-full max-w-xl"
       >
-        <div className="glass-card p-8 md:p-10 relative overflow-hidden">
+        <div className="glass-card p-5 sm:p-8 md:p-10 relative overflow-hidden">
           {/* Decorative glow */}
           <div className="absolute -top-16 -right-16 w-40 h-40 bg-primary/10 blur-[60px] rounded-full pointer-events-none" />
 
           {/* Step Indicator */}
-          <div className="flex items-center gap-2 mb-10 overflow-x-auto no-scrollbar pb-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 mb-6 sm:mb-10 overflow-x-auto no-scrollbar pb-2">
             {stepsMetadata.map((m, idx) => (
-              <div key={idx} className="flex-1 min-w-[60px] flex items-center gap-2">
-                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-xs font-black transition-all duration-300 ${
+              <div key={idx} className="flex-1 min-w-[40px] sm:min-w-[60px] flex items-center gap-1.5 sm:gap-2">
+                <div className={`w-7 h-7 sm:w-9 sm:h-9 rounded-lg sm:rounded-xl flex items-center justify-center text-[10px] sm:text-xs font-black transition-all duration-300 flex-shrink-0 ${
                   idx < step ? 'bg-primary text-black shadow-lg shadow-primary/20' :
                   idx === step ? 'bg-primary/20 text-primary border border-primary/30' :
                   'bg-white/[0.04] text-zinc-600 border border-white/[0.06]'
                 }`}>
-                  {idx < step ? <CheckCircle2 size={14} /> : m.icon}
+                  {idx < step ? <CheckCircle2 size={12} /> : m.icon}
                 </div>
                 {idx < 3 && <div className={`flex-1 h-px transition-all duration-500 ${idx < step ? 'bg-primary' : 'bg-white/[0.06]'}`} />}
               </div>
             ))}
           </div>
 
-          <div className="mb-8">
-            <h2 className="text-2xl md:text-3xl font-black text-white leading-tight">{stepsMetadata[step].title}</h2>
+          <div className="mb-5 sm:mb-8">
+            <h2 className="text-xl sm:text-2xl md:text-3xl font-black text-white leading-tight">{stepsMetadata[step].title}</h2>
             <p className="text-zinc-600 text-[10px] font-black uppercase tracking-[0.2em] mt-1.5">{stepsMetadata[step].sub}</p>
           </div>
 
@@ -260,19 +260,15 @@ export default function Register() {
                 </button>
 
                 {/* Google Signup Integration */}
-                {!!import.meta.env.VITE_GOOGLE_CLIENT_ID && (
-                  <>
-                    <div className="flex items-center my-4">
-                      <div className="flex-1 h-px bg-white/[0.06]" />
-                      <span className="text-[10px] uppercase tracking-widest text-zinc-600 px-3 font-black">or</span>
-                      <div className="flex-1 h-px bg-white/[0.06]" />
-                    </div>
-                    <GoogleSignInButton
-                      label="Sign up with Google"
-                      onSuccess={() => navigate('/')}
-                    />
-                  </>
-                )}
+                <div className="flex items-center my-4">
+                  <div className="flex-1 h-px bg-white/[0.06]" />
+                  <span className="text-[10px] uppercase tracking-widest text-zinc-600 px-3 font-black">or</span>
+                  <div className="flex-1 h-px bg-white/[0.06]" />
+                </div>
+                <GoogleSignInButton
+                  label="Sign up with Google"
+                  onSuccess={() => navigate('/')}
+                />
               </motion.form>
             )}
 
@@ -388,8 +384,8 @@ export default function Register() {
           </AnimatePresence>
 
           {/* Footer */}
-          <div className="mt-8 pt-6 border-t border-white/[0.04] text-center relative z-10">
-            <div className="flex items-center justify-center gap-6 text-[9px] font-bold text-zinc-700 uppercase tracking-widest mb-4">
+          <div className="mt-6 sm:mt-8 pt-5 sm:pt-6 border-t border-white/[0.04] text-center relative z-10">
+            <div className="flex items-center justify-center gap-4 sm:gap-6 text-[8px] sm:text-[9px] font-bold text-zinc-700 uppercase tracking-widest mb-3 sm:mb-4">
               <span className="flex items-center gap-1.5"><ShieldCheck size={12} /> ISO 27001</span>
               <span className="flex items-center gap-1.5"><CheckCircle2 size={12} /> SEBI Compliant</span>
             </div>
